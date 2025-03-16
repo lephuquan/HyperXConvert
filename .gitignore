@@ -1,0 +1,31 @@
+# Java + Spring Boot - Bỏ qua các thư mục build & dependency
+target/
+*.jar
+*.war
+*.ear
+
+# IntelliJ IDEA / Eclipse / VSCode
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# Config / Secret Files
+application.properties
+application.yml
+.env
+
+
+# React / Node.js - Node modules & build
+node_modules/
+dist/
+build/
+
+# Editor files
+.idea/
+.vscode/
+*.log
+
+# Environment & secret files
+.env
