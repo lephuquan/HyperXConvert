@@ -6,13 +6,21 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
+/**
+ * Message for file conversion queue
+ */
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class FileMessage implements Serializable {
-    private static final long serialVersionUID = 1L; // Thêm serialVersionUID để đảm bảo tính tương thích
-
-    private String fileId;
-    private String originalFilename;
+    private String conversionId;
+    private String s3Path;
+    private String sourceFormat;
     private String targetFormat;
+    
+    public FileMessage(String conversionId, String s3Path, String targetFormat) {
+        this.conversionId = conversionId;
+        this.s3Path = s3Path;
+        this.targetFormat = targetFormat;
+    }
 }
