@@ -29,3 +29,5 @@ build/
 
 # Environment & secret files
 .env
+
+*.yaml
