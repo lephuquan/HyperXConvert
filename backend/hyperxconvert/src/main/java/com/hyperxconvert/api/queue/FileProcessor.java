@@ -58,7 +58,8 @@ public class FileProcessor {
             
             // Send email notification
             if (conversion.getUser().getEmail() != null) {
-                String downloadUrl = "https://hyperxconvert.com/conversions/" + conversionId + "/download";
+//                String downloadUrl = "https://hyperxconvert.com/conversions/" + conversionId + "/download";
+                String downloadUrl = "http://localhost:8080/api/v1/conversions/" + conversionId + "/download?token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJsZXBodXF1YW4yazFAZ21haWwuY29tIiwiaWF0IjoxNzQyNDU1NTAzLCJleHAiOjE3NDI1NDE5MDN9.j068jzHgb4ezcNSbsAbD99dhCTDcug1B8FHNVB-WnLU";// khi kiểm tra nút downdload file trong email
                 emailService.sendConversionCompleteEmail(
                         conversion.getUser().getEmail(),
                         conversion.getUser().getFullName(),

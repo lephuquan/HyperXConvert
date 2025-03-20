@@ -49,4 +49,12 @@ public interface ConversionRepository extends JpaRepository<Conversion, Long> {
      * @return The conversions
      */
     List<Conversion> findByStatus(Conversion.ConversionStatus status);
+    
+    /**
+     * Find conversions by user ordered by creation date descending
+     *
+     * @param user The user
+     * @return The conversions
+     */
+    List<Conversion> findByUserOrderByCreatedAtDesc(User user);
 }

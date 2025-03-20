@@ -47,7 +47,8 @@ public class FileService {
 
             // Gửi thông tin tệp qua RabbitMQ
             String fileId = UUID.randomUUID().toString();
-            rabbitMQSender.sendToQueue(fileId, tempFile.getAbsolutePath(), targetFormat);
+            rabbitMQSender.sendMessage(new com.hyperxconvert.api.queue.FileMessage(
+                fileId, tempFile.getAbsolutePath(), getFileExtension(file.getOriginalFilename()), targetFormat));
             fileIds.add(fileId);
         }
         return fileIds;
@@ -71,5 +72,22 @@ public class FileService {
         } catch (IOException e) {
             throw new RuntimeException("Lỗi khi lưu tệp: " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Get file extension from filename
+     *
+     * @param filename The filename
+     * @return The file extension
+     */
+    private String getFileExtension(String filename) {
+        if (filename == null) {
+            return "";
+        }
+        int lastDotIndex = filename.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            return filename.substring(lastDotIndex + 1).toLowerCase();
+        }
+        return "";
     }
 }

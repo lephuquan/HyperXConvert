@@ -10,12 +10,15 @@ import com.hyperxconvert.api.repository.ConversionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -67,8 +70,8 @@ public class ConversionService {
         }
         
         // Check if user has enough credits
-        int requiredCredits = calculateRequiredCredits(file.getSize(), originalFormat, targetFormat);
-        creditService.useCredits(user, requiredCredits);
+//        int requiredCredits = calculateRequiredCredits(file.getSize(), originalFormat, targetFormat);
+//        creditService.useCredits(user, requiredCredits);
         
         // Upload file to S3
         String s3Path = s3StorageService.uploadFile(file);
@@ -82,7 +85,7 @@ public class ConversionService {
                 .targetFormat(targetFormat)
                 .s3OriginalPath(s3Path)
                 .status(Conversion.ConversionStatus.PENDING)
-                .creditsUsed(requiredCredits)
+//                .creditsUsed(requiredCredits)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -168,13 +171,10 @@ public class ConversionService {
     /**
      * Delete a conversion
      *
-     * @param id The conversion ID
+     * @param conversion The conversion to delete
      */
     @Transactional
-    public void deleteConversion(Long id) {
-        Conversion conversion = conversionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Conversion not found: " + id));
-        
+    public void deleteConversion(Conversion conversion) {
         // Delete files from S3
         if (conversion.getS3OriginalPath() != null) {
             s3StorageService.deleteFile(conversion.getS3OriginalPath());
@@ -185,6 +185,19 @@ public class ConversionService {
         }
         
         conversionRepository.delete(conversion);
+    }
+
+    /**
+     * Delete a conversion by ID
+     *
+     * @param id The conversion ID
+     */
+    @Transactional
+    public void deleteConversion(Long id) {
+        Conversion conversion = conversionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Conversion not found: " + id));
+        
+        deleteConversion(conversion);
     }
 
     /**
@@ -235,5 +248,27 @@ public class ConversionService {
     public List<Conversion> getExpiredConversions() {
         return conversionRepository.findByExpiryDateBeforeAndStatus(
                 LocalDateTime.now(), Conversion.ConversionStatus.COMPLETED);
+    }
+    
+    /**
+     * Get the converted file as a Resource
+     *
+     * @param conversion The conversion
+     * @return The converted file as a Resource
+     */
+    public Resource getConvertedFile(Conversion conversion) {
+        if (conversion.getStatus() != Conversion.ConversionStatus.COMPLETED) {
+            throw new IllegalStateException("Conversion is not completed yet");
+        }
+        
+        if (conversion.getS3ConvertedPath() == null) {
+            throw new IllegalStateException("Converted file path is not available");
+        }
+        
+        // Download the file from S3
+        File tempFile = s3StorageService.downloadToTemp(conversion.getS3ConvertedPath());
+        
+        // Return the file as a Resource
+        return new FileSystemResource(tempFile);
     }
 }
