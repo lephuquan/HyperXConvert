@@ -1,0 +1,24 @@
+#spring:
+#  profiles: staging
+#  datasource:
+#    url: jdbc:postgresql://hyperxconvert-db.crme0kq4arx0.ap-southeast-1.rds.amazonaws.com:5432/hyperxconvert
+#    username: postgres
+#    password: HyperX2025!*
+#  flyway:
+#    locations: classpath:db/migration
+#server:
+#  port: 8080
+#aws:
+#  region: ap-southeast-1
+#  s3:
+#    bucket: hyperxconvert-staging
+#  sqs:
+#    upload-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/upload-queue-staging
+#    convert-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/convert-queue-staging
+#    dlq-upload-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/dlq-upload-queue-staging
+#    dlq-convert-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/dlq-convert-queue-staging
+#  ses:
+#    from-address: no-reply-staging@hyperxconvert.com
+#logging:
+#  file:
+#    name: /home/ec2-user/hyperxconvert-backend.log
