@@ -1,0 +1,17 @@
+spring:
+  config:
+    activate:
+      on-profile: dev # -Dspring.profiles.active=dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hyperxconvert
+
+aws:
+  s3:
+    bucket: hyperxconvert-staging
+  sqs:
+    upload-queue: upload-queue
+    convert-queue: convert-queue
+
+app:
+  upload:
+    max-daily-uploads: 1000
