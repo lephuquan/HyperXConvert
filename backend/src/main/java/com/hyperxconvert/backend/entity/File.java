@@ -18,9 +18,6 @@ public class File {
     @Column(name = "file_id")
     private UUID fileId;
     
-    @Column(name = "user_id")
-    private UUID userId;
-    
     @Column(name = "user_ip", nullable = false, length = 45)
     private String userIp;
     
@@ -33,7 +30,7 @@ public class File {
     @Column(name = "format_from", nullable = false, length = 50)
     private String formatFrom;
     
-    @Column(name = "format_to", nullable = false, length = 50)
+    @Column(name = "format_to", length = 50)
     private String formatTo;
     
     @Column(name = "status", nullable = false, length = 20)

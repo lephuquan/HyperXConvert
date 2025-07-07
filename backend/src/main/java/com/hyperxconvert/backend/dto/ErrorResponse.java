@@ -9,15 +9,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ErrorResponse {
-    
-    private String error;
+    private String errorCode;
     private String message;
+    private String status;
     private LocalDateTime timestamp;
-    
-    // Constructor with error and message (timestamp auto-generated)
-    public ErrorResponse(String error, String message) {
-        this.error = error;
+
+    public ErrorResponse(String errorCode, String message, String status) {
+        this.errorCode = errorCode;
         this.message = message;
+        this.status = status;
         this.timestamp = LocalDateTime.now();
     }
 } 
