@@ -1,0 +1,57 @@
+Quy tắc SEO và Blog cho HyperXConvert
+Yêu cầu SEO
+
+Sitemap.xml: Bao gồm các trang chính và blog posts.<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://hyperxconvert.online/</loc></url>
+  <url><loc>https://hyperxconvert.online/blog/chuyen-pdf-sang-word-khong-loi-font</loc></url>
+</urlset>
+
+
+Robots.txt:User-agent: *
+Allow: /
+Sitemap: https://hyperxconvert.online/sitemap.xml
+
+
+Meta Tags:
+Mỗi trang/blog có meta_title (≤60 ký tự), meta_description (≤160 ký tự), keywords.
+Ví dụ:<Helmet>
+  <title>Chuyển PDF sang Word - HyperXConvert</title>
+  <meta name="description" content="Chuyển PDF sang Word không lỗi font..." />
+  <meta name="keywords" content="chuyển pdf sang word, pdf to word" />
+</Helmet>
+
+
+
+
+Open Graph Tags:
+Thêm OG tags cho social sharing.
+
+<meta property="og:title" content="Chuyển PDF sang Word" />
+<meta property="og:description" content="Hướng dẫn chuyển PDF..." />
+<meta property="og:image" content="/assets/pdf-to-word.jpg" />
+
+
+
+Quy tắc Blog
+
+Nội dung:
+Tối thiểu 1,500 từ/bài, 5+ ảnh minh họa.
+Internal linking đến các trang chuyển đổi.
+CTA: 2-3 call-to-action mỗi bài (ví dụ: "Thử chuyển đổi ngay!").
+Ví dụ bài viết:# Cách chuyển PDF sang Word không lỗi font - Hướng dẫn chi tiết 2025
+## Giới thiệu
+Chuyển PDF sang Word là nhu cầu phổ biến...
+[Thử ngay tại đây](https://hyperxconvert.online/convert)
+
+
+
+
+Slug: URL thân thiện, ví dụ: /blog/chuyen-pdf-sang-word-khong-loi-font.
+Google Analytics: Theo dõi organic traffic và time on page (>2 phút).
+
+Tiêu chí chấp nhận
+
+Sitemap.xml và robots.txt được cấu hình đúng.
+Mỗi bài blog có meta tags, OG tags, và internal links.
+Blog posts tải < 3 giây (Lighthouse).
+Google Analytics và Search Console được tích hợp.
