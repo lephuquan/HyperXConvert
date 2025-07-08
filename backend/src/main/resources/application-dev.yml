@@ -4,13 +4,19 @@ spring:
       on-profile: dev # -Dspring.profiles.active=dev
   datasource:
     url: jdbc:postgresql://localhost:5432/hyperxconvert
+#    username: extended
+#    password: extended
+#    driver-class-name: extended
 
 aws:
+#  region: extended
   s3:
     bucket: hyperxconvert-staging
   sqs:
-    upload-queue: upload-queue
-    convert-queue: convert-queue
+    upload-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/upload-queue
+    convert-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/convert-queue
+    dlq-upload-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/dlq-upload-queue
+    dlq-convert-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/dlq-convert-queue
 
 app:
   upload:

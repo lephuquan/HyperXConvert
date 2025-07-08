@@ -14,10 +14,6 @@ public enum FileStatus {
         this.value = value;
     }
     
-    public String getValue() {
-        return value;
-    }
-    
     public static FileStatus fromString(String text) {
         for (FileStatus status : FileStatus.values()) {
             if (status.value.equalsIgnoreCase(text)) {
