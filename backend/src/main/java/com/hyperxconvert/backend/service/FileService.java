@@ -62,7 +62,13 @@ public class FileService {
         File file = new File(fileId, ipAddress, s3Key, extension.toUpperCase(), null, FileStatus.UPLOADED.name(), now, expiresAt);
         fileRepository.save(file);
         // Lưu log convert
-        ConvertLog log = new ConvertLog(UUID.randomUUID(), fileId, ipAddress, now);
+        ConvertLog log = new ConvertLog();
+        log.setId(UUID.randomUUID());
+        log.setFileId(fileId);
+        log.setUserIp(ipAddress);
+        log.setStatus("UPLOADED");
+        log.setStartedAt(now);
+        log.setCreatedAt(now);
         convertLogRepository.save(log);
         return new UploadUrlResponse(fileId.toString(), presignedUrl, "URL_GENERATED", expiresAt.toString());
     }

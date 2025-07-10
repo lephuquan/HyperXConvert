@@ -13,10 +13,10 @@ aws:
   s3:
     bucket: hyperxconvert-staging
   sqs:
-    upload-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/upload-queue
-    convert-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/convert-queue
-    dlq-upload-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/dlq-upload-queue
-    dlq-convert-queue: https://sqs.ap-southeast-1.amazonaws.com/{account-id}/dlq-convert-queue
+    upload-queue: https://sqs.ap-southeast-1.amazonaws.com/037195638912/upload-queue-staging
+    convert-queue: https://sqs.ap-southeast-1.amazonaws.com/037195638912/convert-queue-staging
+    dlq-upload-queue: https://sqs.ap-southeast-1.amazonaws.com/037195638912/dlq-upload-queue-staging
+    dlq-convert-queue: https://sqs.ap-southeast-1.amazonaws.com/037195638912/dlq-convert-queue-staging
 
 app:
   upload:

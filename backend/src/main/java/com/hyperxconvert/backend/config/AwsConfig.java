@@ -3,6 +3,7 @@ package com.hyperxconvert.backend.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -16,16 +17,19 @@ public class AwsConfig {
     private String endpoint;
 
     @Bean
+    public AwsCredentialsProvider awsCredentialsProvider() {
+        return DefaultCredentialsProvider.create();
+    }
+
+    @Bean
     public S3Client s3Client() {
         var builder = S3Client.builder()
                 .region(Region.AP_SOUTHEAST_1)
-                .credentialsProvider(DefaultCredentialsProvider.create());
-        
+                .credentialsProvider(awsCredentialsProvider());
         if (endpoint != null && !endpoint.isEmpty()) {
             builder.endpointOverride(URI.create(endpoint))
                    .forcePathStyle(true);
         }
-        
         return builder.build();
     }
 
@@ -33,12 +37,10 @@ public class AwsConfig {
     public SqsClient sqsClient() {
         var builder = SqsClient.builder()
                 .region(Region.AP_SOUTHEAST_1)
-                .credentialsProvider(DefaultCredentialsProvider.create());
-        
+                .credentialsProvider(awsCredentialsProvider());
         if (endpoint != null && !endpoint.isEmpty()) {
             builder.endpointOverride(URI.create(endpoint));
         }
-        
         return builder.build();
     }
 }
