@@ -1,5 +1,7 @@
 package com.hyperxconvert.backend.controller;
 
+import com.hyperxconvert.backend.dto.FileConvertRequest;
+import com.hyperxconvert.backend.dto.FileConvertResponse;
 import com.hyperxconvert.backend.dto.UploadUrlRequest;
 import com.hyperxconvert.backend.dto.UploadUrlResponse;
 import com.hyperxconvert.backend.service.FileService;
@@ -23,6 +25,12 @@ public class FileController {
             HttpServletRequest httpRequest
     ) {
         UploadUrlResponse response = fileService.createPresignedUploadUrl(request, httpRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/convert")
+    public ResponseEntity<FileConvertResponse> convertFile(@Valid @RequestBody FileConvertRequest request) {
+        FileConvertResponse response = fileService.processFileConvertRequest(request);
         return ResponseEntity.ok(response);
     }
 } 
