@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { ClipLoader } from 'react-spinners';
 import ReactGA from 'react-ga4';
 import { useTranslation } from 'react-i18next';
+import FormatSelector from './FormatSelector';
 
 interface FileConverterProps {}
 
@@ -17,6 +18,13 @@ const FileConverter: React.FC<FileConverterProps> = () => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'completed' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [fileExtension, setFileExtension] = useState<string | null>(null); // Lưu đuôi file
+  const [targetFormat, setTargetFormat] = useState<string | null>(null); // Lưu định dạng đích
+  const [formatError, setFormatError] = useState<string>(''); // Lỗi chọn định dạng
+  const [fileId, setFileId] = useState<string | null>(null); // Lưu fileId sau upload
+  const [convertLoading, setConvertLoading] = useState<boolean>(false); // Trạng thái loading khi chuyển đổi
+  const [jobId, setJobId] = useState<string | null>(null); // Lưu jobId sau khi gửi convert
+  const [convertStatus, setConvertStatus] = useState<string | null>(null); // Lưu trạng thái PROCESSING
 
   // Validate file
   const validateFile = (file: File): boolean => {
@@ -38,9 +46,12 @@ const FileConverter: React.FC<FileConverterProps> = () => {
       const file = acceptedFiles[0];
       if (file && validateFile(file)) {
         setSelectedFile(file);
+        setFileExtension(file.name.split('.').pop()?.toLowerCase() || null); // Lưu đuôi file
         setUploadStatus('idle');
         setUploadProgress(0);
         setErrorMessage('');
+        setTargetFormat(null); // Reset định dạng đích khi chọn file mới
+        setFormatError('');
         // Google Analytics event
         ReactGA.event({ category: 'File', action: 'Upload', label: file.name });
       }
@@ -69,13 +80,17 @@ const FileConverter: React.FC<FileConverterProps> = () => {
       };
       const uploadResponse = await axios.post('/file/upload-url', body);
       console.log('uploadResponse:', uploadResponse.data);
-      const { uploadUrl } = uploadResponse.data;
+      const { uploadUrl, fileId: uploadedFileId } = uploadResponse.data;
       console.log('uploadUrl:', uploadUrl);
 
       if (!uploadUrl) {
         toast.error('Không lấy được uploadUrl từ backend!');
         setUploadStatus('error');
         return;
+      }
+
+      if (uploadedFileId) {
+        setFileId(uploadedFileId);
       }
 
       // Upload to S3
@@ -106,6 +121,49 @@ const FileConverter: React.FC<FileConverterProps> = () => {
       }
       setErrorMessage(msg);
       toast.error(msg);
+    }
+  };
+
+  // Thêm hàm xử lý khi nhấn nút Chuyển đổi (giả lập, không gọi API ở bước này)
+  const handleConvert = async () => {
+    if (!fileId || !targetFormat) {
+      setFormatError('Vui lòng chọn định dạng đích trước khi chuyển đổi.');
+      return;
+    }
+    setFormatError('');
+    setConvertLoading(true);
+    setJobId(null);
+    setConvertStatus(null);
+    try {
+      const payload = { fileId, targetFormat };
+      const response = await axios.post('/file/convert', payload);
+      if (response.data && response.data.jobId) {
+        setJobId(response.data.jobId);
+        setConvertStatus(response.data.status || 'PROCESSING');
+        toast.success('Yêu cầu chuyển đổi đã được gửi. Đang xử lý...');
+      } else {
+        setFormatError('Không nhận được phản hồi hợp lệ từ hệ thống.');
+      }
+    } catch (error: any) {
+      let msg = 'Lỗi chuyển đổi. Vui lòng thử lại.';
+      if (error?.response?.data?.error_code) {
+        switch (error.response.data.error_code) {
+          case 'FILE_NOT_READY':
+            msg = 'File chưa sẵn sàng để chuyển đổi. Vui lòng thử lại.';
+            break;
+          case 'UNSUPPORTED_FORMAT':
+            msg = 'Định dạng chuyển đổi không được hỗ trợ.';
+            break;
+          default:
+            msg = error.response.data.message || msg;
+        }
+      } else if (error?.response?.data?.message) {
+        msg = error.response.data.message;
+      }
+      setFormatError(msg);
+      toast.error(msg);
+    } finally {
+      setConvertLoading(false);
     }
   };
 
@@ -167,9 +225,36 @@ const FileConverter: React.FC<FileConverterProps> = () => {
           <p className="text-sm mt-1">{uploadProgress}%</p>
         </div>
       )}
-      {uploadStatus === 'completed' && (
-        <div className="mt-4 text-green-600">
-          <p>{t('upload_success', 'Upload thành công!')}</p>
+      {uploadStatus === 'completed' && selectedFile && (
+        <div className="mt-6">
+          {/* Component chọn định dạng chuyển đổi */}
+          <FormatSelector
+            fileExtension={fileExtension}
+            onFormatChange={setTargetFormat}
+            disabled={convertLoading}
+          />
+          {/* Nút Chuyển đổi */}
+          <button
+            className="mt-4 bg-blue-500 text-white font-semibold px-4 py-3 rounded-lg w-full hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-400 transition flex items-center justify-center"
+            onClick={handleConvert}
+            disabled={!targetFormat || !fileId || convertLoading}
+          >
+            {convertLoading ? (
+              <span className="flex items-center justify-center">
+                <ClipLoader size={20} color="#fff" />
+                <span className="ml-2">Đang gửi yêu cầu...</span>
+              </span>
+            ) : (
+              'Chuyển đổi'
+            )}
+          </button>
+          {/* Thông báo trạng thái hoặc lỗi */}
+          {formatError && <p className="mt-2 text-sm text-red-600 text-center">{formatError}</p>}
+          {jobId && (
+            <div className="mt-4 text-blue-700 text-center text-base font-medium">
+              Đang xử lý... (jobId: {jobId})
+            </div>
+          )}
         </div>
       )}
       {uploadStatus === 'error' && errorMessage && (
