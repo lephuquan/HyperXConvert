@@ -205,28 +205,28 @@ public class FileValidationWorker {
                 long fileSize = s3InputStream.available();
                 if (fileSize > MAX_FILE_SIZE) {
                     handleValidationFailure(uploadMessage, "FILE_TOO_LARGE", startedAt);
-                    deleteMessage(message);
+//                    deleteMessage(message);
                     return;
                 }
                 // Validate MIME type
                 String mimeType = tika.detect(s3InputStream, filePath);
                 if (!SUPPORTED_MIME_TYPES.contains(mimeType)) {
                     handleValidationFailure(uploadMessage, "UNSUPPORTED_FORMAT", startedAt);
-                    deleteMessage(message);
+//                    deleteMessage(message);
                     return;
                 }
                 // Simulate ClamAV scan via Lambda
                 boolean isClean = simulateClamAVScan(filePath);
                 if (!isClean) {
                     handleValidationFailure(uploadMessage, "CORRUPTED_FILE", startedAt);
-                    deleteMessage(message);
+//                    deleteMessage(message);
                     return;
                 }
                 // If valid: send to convert-queue, update DB
 //                sendToConvertQueue(message.body());
                 updateFileStatus(fileId, "PROCESSING");
                 logConvertQueue(uploadMessage, "PROCESSING", null, startedAt, LocalDateTime.now());
-                deleteMessage(message);
+//                deleteMessage(message);
             }
         } catch (S3Exception s3e) {
             log.error("[FileValidationWorker] S3 error: {}", s3e.getMessage(), s3e);
@@ -273,13 +273,13 @@ public class FileValidationWorker {
 //        sqsClient.sendMessage(sendRequest);
 //    }
 
-    private void deleteMessage(Message message) {
-        DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder()
-                .queueUrl(uploadQueueUrl)
-                .receiptHandle(message.receiptHandle())
-                .build();
-        sqsClient.deleteMessage(deleteRequest);
-    }
+//    private void deleteMessage(Message message) {
+//        DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder()
+//                .queueUrl(uploadQueueUrl)
+//                .receiptHandle(message.receiptHandle())
+//                .build();
+//        sqsClient.deleteMessage(deleteRequest);
+//    }
 
     /**
      * Simulate ClamAV scan via Lambda. Returns true if file is clean, false if malware detected.
