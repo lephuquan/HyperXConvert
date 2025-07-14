@@ -40,8 +40,8 @@ public class FileValidationWorker {
 
     @Value("${aws.sqs.upload-queue}")
     private String uploadQueueUrl;
-    @Value("${aws.sqs.convert-queue}")
-    private String convertQueueUrl;
+//    @Value("${aws.sqs.convert-queue}")
+//    private String convertQueueUrl;
     @Value("${aws.s3.bucket}")
     private String s3Bucket;
 
@@ -223,7 +223,7 @@ public class FileValidationWorker {
                     return;
                 }
                 // If valid: send to convert-queue, update DB
-                sendToConvertQueue(message.body());
+//                sendToConvertQueue(message.body());
                 updateFileStatus(fileId, "PROCESSING");
                 logConvertQueue(uploadMessage, "PROCESSING", null, startedAt, LocalDateTime.now());
                 deleteMessage(message);
@@ -265,13 +265,13 @@ public class FileValidationWorker {
         convertLogRepository.save(logEntry);
     }
 
-    private void sendToConvertQueue(String messageBody) {
-        SendMessageRequest sendRequest = SendMessageRequest.builder()
-                .queueUrl(convertQueueUrl)
-                .messageBody(messageBody)
-                .build();
-        sqsClient.sendMessage(sendRequest);
-    }
+//    private void sendToConvertQueue(String messageBody) {
+//        SendMessageRequest sendRequest = SendMessageRequest.builder()
+//                .queueUrl(convertQueueUrl)
+//                .messageBody(messageBody)
+//                .build();
+//        sqsClient.sendMessage(sendRequest);
+//    }
 
     private void deleteMessage(Message message) {
         DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder()
