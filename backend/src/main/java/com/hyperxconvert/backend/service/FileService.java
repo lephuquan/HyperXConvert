@@ -12,6 +12,8 @@ import com.hyperxconvert.backend.repository.ConvertLogRepository;
 import com.hyperxconvert.backend.repository.FileRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -25,6 +27,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class FileService {
@@ -51,6 +56,10 @@ public class FileService {
     private static final List<String> SUPPORTED_FORMATS = Arrays.asList(
             "PDF", "DOCX", "JPG", "PNG", "MP3", "COMPRESSED_PDF", "COMPRESSED_VIDEO"
     );
+
+    @Autowired
+    private S3StorageService s3StorageService;
+    private static final Logger logger = LoggerFactory.getLogger(FileService.class);
 
     public FileService(FileRepository fileRepository, ConvertLogRepository convertLogRepository, S3Service s3Service,
                       @Value("${app.upload.max-daily-uploads:5}") int maxDailyUploads,
@@ -86,6 +95,7 @@ public class FileService {
         log.setStartedAt(now);
         log.setCreatedAt(now);
         convertLogRepository.save(log);
+        logger.info("Đã tạo presigned URL cho fileId: {}, expiresAt: {}", fileId, expiresAt);
         return new UploadUrlResponse(fileId.toString(), presignedUrl, "URL_GENERATED", expiresAt.toString());
     }
 
@@ -103,7 +113,8 @@ public class FileService {
         }
         File file = fileOpt.get();
         // 2. Kiểm tra trạng thái file
-        if (!"READY".equalsIgnoreCase(file.getStatus())) {
+        if (!"PROCESSING".equalsIgnoreCase(file.getStatus())) {
+            logger.error("FileId: {}, current status: {}", fileId, file.getStatus());
             throw new ApiException("FILE_NOT_READY", "error.file.not.ready");
         }
         // 3. Validate targetFormat
@@ -155,6 +166,48 @@ public class FileService {
             throw new ApiException("SYSTEM_ERROR", "error.internal");
         }
         return new FileConvertResponse(jobId.toString(), "PROCESSING");
+    }
+
+    public Map<String, Object> getFileStatus(String fileId) {
+        try {
+            UUID uuid = UUID.fromString(fileId);
+            File file = fileRepository.findById(uuid).orElseThrow(() -> new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_FOUND", "error.file.not.found"));
+            Map<String, Object> result = new HashMap<>();
+            result.put("status", file.getStatus());
+            if ("SUCCESS".equalsIgnoreCase(file.getStatus()) && file.getConvertedPath() != null) {
+                String presignedUrl = s3StorageService.generatePresignedUrl(file.getConvertedPath(), Duration.ofHours(24));
+                result.put("downloadUrl", presignedUrl);
+            }
+            return result;
+        } catch (com.hyperxconvert.backend.exception.ApiException e) {
+            logger.error("[FileService] File not found: {}", fileId);
+            throw e;
+        } catch (Exception e) {
+            logger.error("[FileService] Internal error: {}", e.getMessage(), e);
+            throw new RuntimeException("SYSTEM_ERROR");
+        }
+    }
+
+    public Map<String, Object> getDownloadUrl(String fileId) {
+        try {
+            UUID uuid = UUID.fromString(fileId);
+            File file = fileRepository.findById(uuid).orElseThrow(() -> new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File không tồn tại hoặc chưa được chuyển đổi thành công -> getDownloadUrl(String fileId)"));
+            if (!"SUCCESS".equalsIgnoreCase(file.getStatus()) || file.getConvertedPath() == null) {
+                logger.error("[FileService] FileId {} chưa được chuyển đổi thành công hoặc không có convertedPath", fileId);
+                logger.error("getDownloadUrl(String fileId) if...");
+                throw new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File không tồn tại hoặc chưa được chuyển đổi thành công");
+            }
+            String presignedUrl = s3StorageService.generatePresignedUrl(file.getConvertedPath(), Duration.ofHours(24));
+            Map<String, Object> result = new HashMap<>();
+            result.put("preSignedUrl", presignedUrl);
+            return result;
+        } catch (com.hyperxconvert.backend.exception.ApiException e) {
+            logger.error("[FileService] File không tồn tại hoặc chưa được chuyển đổi thành công: {}", fileId);
+            throw e;
+        } catch (Exception e) {
+            logger.error("[FileService] Lỗi hệ thống khi tạo URL tải xuống: {}", e.getMessage(), e);
+            throw new RuntimeException("SYSTEM_ERROR");
+        }
     }
 
     private void validateLimit(String ipAddress) {

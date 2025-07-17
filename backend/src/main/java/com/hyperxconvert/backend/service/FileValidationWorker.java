@@ -23,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * FileValidationWorker Service
@@ -37,6 +39,7 @@ public class FileValidationWorker {
     private final FileRepository fileRepository;
     private final ConvertLogRepository convertLogRepository;
     private final Tika tika = new Tika();
+    private final ExecutorService executor = Executors.newFixedThreadPool(10); // 5 thread song song
 
     @Value("${aws.sqs.upload-queue}")
     private String uploadQueueUrl;
@@ -63,8 +66,9 @@ public class FileValidationWorker {
     /**
      * Polls the upload-queue every 5 seconds, processes up to 10 messages at a time.
      */
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 1000)
     public void pollUploadQueue() {// Trigger
+        log.info("Bắt đầu pollUploadQueue()");
         try {
             ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
                     .queueUrl(uploadQueueUrl) // URL của hàng đợi SQS cần lấy tin nhắn
@@ -74,14 +78,17 @@ public class FileValidationWorker {
                     .build();
             List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages(); // Nhận danh sách tin nhắn từ hàng đợi SQS
             for (Message message : messages) {
-                processMessage(message);
+                executor.submit(() -> processMessage(message)); // Xử lý song song
             }
         } catch (Exception e) {
             log.error("[FileValidationWorker] Error polling SQS: {}", e.getMessage(), e);
         }
+        log.info("Kết thúc pollUploadQueue()");
     }
 
     private void processMessage(Message message) {
+        log.info("Bắt đâu validate file từ pool upload");
+        long start = System.nanoTime();
         LocalDateTime startedAt = LocalDateTime.now();
         UploadMessage uploadMessage = null;
         String filePath = null;
@@ -237,6 +244,11 @@ public class FileValidationWorker {
                 handleValidationFailure(uploadMessage, "PROCESSING_ERROR", startedAt);
             }
             // Let SQS retry by not deleting the message
+        } finally {
+            long end = System.nanoTime();
+            long durationMs = (end - start) / 1_000_000;
+            log.info("[FileValidationWorker] processMessage for message hash {} took {} ms", message.body().hashCode(), durationMs);
+            log.info("Kết thúc validate file từ pool upload");
         }
     }
 
