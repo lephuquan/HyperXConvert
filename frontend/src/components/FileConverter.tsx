@@ -6,6 +6,7 @@ import { ClipLoader } from 'react-spinners';
 import ReactGA from 'react-ga4';
 import { useTranslation } from 'react-i18next';
 import FormatSelector from './FormatSelector';
+import FileStatusTracker from './FileStatusTracker';
 
 interface FileConverterProps {}
 
@@ -250,9 +251,10 @@ const FileConverter: React.FC<FileConverterProps> = () => {
           </button>
           {/* Thông báo trạng thái hoặc lỗi */}
           {formatError && <p className="mt-2 text-sm text-red-600 text-center">{formatError}</p>}
-          {jobId && (
-            <div className="mt-4 text-blue-700 text-center text-base font-medium">
-              Đang xử lý... (jobId: {jobId})
+          {/* Hiển thị trạng thái xử lý file sau khi gửi chuyển đổi */}
+          {jobId && fileId && (
+            <div className="mt-6">
+              <FileStatusTracker fileId={fileId} />
             </div>
           )}
         </div>
