@@ -1,4 +1,4 @@
-package com.hyperxconvert.backend.dto;
+package com.hyperxconvert.backend.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

@@ -1,6 +1,6 @@
 package com.hyperxconvert.backend.exception;
 
-import com.hyperxconvert.backend.dto.ErrorResponse;
+import com.hyperxconvert.backend.dto.response.ErrorResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;

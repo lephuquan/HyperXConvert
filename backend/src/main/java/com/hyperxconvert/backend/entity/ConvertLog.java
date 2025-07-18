@@ -12,7 +12,6 @@ import java.util.UUID;
 @Table(name = "convert_queue_logs")
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class ConvertLog {
     @Id
     @Column(name = "id", nullable = false)
@@ -27,9 +26,6 @@ public class ConvertLog {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    @Column(name = "started_at")
-    private LocalDateTime startedAt;
-
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
 
@@ -38,4 +34,18 @@ public class ConvertLog {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    public ConvertLog(UUID id, UUID fileId, String userIp, String status, LocalDateTime endedAt, String errorCode, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.id = id;
+        this.fileId = fileId;
+        this.userIp = userIp;
+        this.status = status;
+        this.endedAt = endedAt;
+        this.errorCode = errorCode;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
 } 

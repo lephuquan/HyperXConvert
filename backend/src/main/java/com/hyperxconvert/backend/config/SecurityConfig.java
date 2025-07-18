@@ -7,7 +7,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.Customizer;
 
-@Configuration
+@Configuration // Thuộc về cấu hình ứng dụng
 @EnableWebSecurity
 public class SecurityConfig {
 
