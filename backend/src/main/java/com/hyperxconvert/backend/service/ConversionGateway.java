@@ -1,5 +1,6 @@
 package com.hyperxconvert.backend.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.io.File;
 import java.nio.file.Files;
@@ -7,27 +8,40 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import com.hyperxconvert.backend.enums.FileFormat;
 
+@Slf4j
 @Service
-public class FileConversionService {
+public class ConversionGateway {
     public File convert(File inputFile, String fromFormat, String toFormat) throws Exception {
-        // Tùy theo fromFormat/toFormat gọi các hàm chuyển đổi tương ứng
-        if (fromFormat.equals("PDF") && toFormat.equals("DOCX")) {
-            return convertPdfToDocx(inputFile);
-        } else if (fromFormat.equals("DOCX") && toFormat.equals("PDF")) {
-            return convertDocxToPdf(inputFile);
-        } else if (fromFormat.equals("JPG") && toFormat.equals("PNG")) {
-            return convertJpgToPng(inputFile);
-        } else if (fromFormat.equals("PNG") && toFormat.equals("JPG")) {
-            return convertPngToJpg(inputFile);
-        } else if (fromFormat.equals("MP4") && toFormat.equals("MP3")) {
-            return convertMp4ToMp3(inputFile);
-        } else if (fromFormat.equals("PDF") && toFormat.equals("COMPRESSED_PDF")) {
-            return compressPdf(inputFile);
-        } else if (fromFormat.equals("MP4") && toFormat.equals("COMPRESSED_VIDEO")) {
-            return compressVideo(inputFile);
-        } else {
-            throw new Exception("Chuyển đổi định dạng không được hỗ trợ");
+        long start = System.nanoTime();
+        try {
+            FileFormat from = FileFormat.fromString(fromFormat);
+            FileFormat to = FileFormat.fromString(toFormat);
+            if (from == null || to == null) {
+                throw new com.hyperxconvert.backend.exception.ApiException("UNSUPPORTED_FORMAT", "error.unsupported.format");
+            }
+            // Tùy theo from/to gọi các hàm chuyển đổi tương ứng
+            if (from == FileFormat.PDF && to == FileFormat.DOCX) {
+                return convertPdfToDocx(inputFile);
+            } else if (from == FileFormat.DOCX && to == FileFormat.PDF) {
+                return convertDocxToPdf(inputFile);
+            } else if (from == FileFormat.JPG && to == FileFormat.PNG) {
+                return convertJpgToPng(inputFile);
+            } else if (from == FileFormat.PNG && to == FileFormat.JPG) {
+                return convertPngToJpg(inputFile);
+            } else if (from == FileFormat.MP4 && to == FileFormat.MP3) {
+                return convertMp4ToMp3(inputFile);
+            } else if (from == FileFormat.PDF && to == FileFormat.COMPRESSED_PDF) {
+                return compressPdf(inputFile);
+            } else if (from == FileFormat.MP4 && to == FileFormat.COMPRESSED_VIDEO) {
+                return compressVideo(inputFile);
+            } else {
+                throw new com.hyperxconvert.backend.exception.ApiException("UNSUPPORTED_FORMAT", "error.unsupported.conversion");
+            }
+        } finally {
+            long durationMs = (System.nanoTime() - start) / 1_000_000;
+            log.info("[MONITOR] Processing conversion in .......... {}s", String.format("%.1f", durationMs / 1000.0));
         }
     }
 
@@ -37,7 +51,7 @@ public class FileConversionService {
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new Exception("CONVERSION_ERROR: pdf2docx");
+        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.pdf2docx");
         return outputFile;
     }
     private boolean isPdfFile(File file) throws IOException {
@@ -67,7 +81,7 @@ public class FileConversionService {
         File result = new File(outputFile.getParent(), pdfName);
 
         if (exitCode != 0 || !result.exists() || !isPdfFile(result)) {
-            throw new Exception("CONVERSION_ERROR: docx2pdf output missing or not PDF. Output: " + output);
+            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.docx2pdf");
         }
         return result;
     }
@@ -77,7 +91,7 @@ public class FileConversionService {
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new Exception("CONVERSION_ERROR: sharp jpg2png");
+        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.jpg2png");
         return outputFile;
     }
     private File convertPngToJpg(File inputFile) throws Exception {
@@ -86,7 +100,7 @@ public class FileConversionService {
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new Exception("CONVERSION_ERROR: sharp png2jpg");
+        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.png2jpg");
         return outputFile;
     }
     private File convertMp4ToMp3(File inputFile) throws Exception {
@@ -95,7 +109,7 @@ public class FileConversionService {
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new Exception("CONVERSION_ERROR: ffmpeg mp4->mp3");
+        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.mp4tomp3");
         return outputFile;
     }
     private File compressPdf(File inputFile) throws Exception {
@@ -108,7 +122,7 @@ public class FileConversionService {
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new Exception("CONVERSION_ERROR: ghostscript compress pdf");
+        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.compresspdf");
         return outputFile;
     }
     private File compressVideo(File inputFile) throws Exception {
@@ -117,7 +131,7 @@ public class FileConversionService {
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new Exception("CONVERSION_ERROR: ffmpeg compress video");
+        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.compressvideo");
         return outputFile;
     }
 

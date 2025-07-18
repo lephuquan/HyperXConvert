@@ -1,13 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import axios from '../api/api';
 import Loading from './ui/Loading';
 import FileDownloader from './FileDownloader';
 
 interface FileStatusTrackerProps {
   fileId: string;
+  onStatusChange?: (status: Status | null) => void;
 }
 
-type Status = 'PROCESSING' | 'SUCCESS' | 'FAILED';
+type Status = 'UPLOADED' | 'QUEUED_AND_VALIDATED' | 'QUEUED_AND_CONVERTED' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
 
 interface StatusResponse {
   status: Status;
@@ -15,60 +16,48 @@ interface StatusResponse {
   message?: string;
 }
 
-const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({ fileId }) => {
-  const [status, setStatus] = useState<Status | null>(null);
-  const [downloadUrl, setDownloadUrl] = useState<string | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
-
-  const fetchStatus = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await axios.get<StatusResponse>(`/file/status/${fileId}`);
-      setStatus(res.data.status);
-      setDownloadUrl(res.data.downloadUrl);
-      setLoading(false);
-      if (res.data.status === 'SUCCESS' || res.data.status === 'FAILED') {
-        if (pollingRef.current) clearInterval(pollingRef.current);
-      }
-    } catch (err: any) {
-      setLoading(false);
-      if (err.response) {
-        if (err.response.status === 404) {
-          setError('Không tìm thấy file. Vui lòng kiểm tra lại hoặc thử lại sau.');
-        } else if (err.response.status === 500) {
-          setError('Lỗi hệ thống. Vui lòng thử lại sau.');
-        } else {
-          setError('Đã xảy ra lỗi. Vui lòng thử lại.');
-        }
-      } else {
-        setError('Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.');
-      }
-      if (pollingRef.current) clearInterval(pollingRef.current);
+const getErrorMessage = (err: any): string => {
+  if (err.response) {
+    if (err.response.status === 404) {
+      return 'Không tìm thấy file. Vui lòng kiểm tra lại hoặc thử lại sau.';
+    } else if (err.response.status === 500) {
+      return 'Lỗi hệ thống. Vui lòng thử lại sau.';
+    } else {
+      return 'Đã xảy ra lỗi. Vui lòng thử lại.';
     }
-  };
+  } else {
+    return 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.';
+  }
+};
 
-  useEffect(() => {
-    fetchStatus();
-    pollingRef.current = setInterval(fetchStatus, 3000);
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-    // eslint-disable-next-line
-  }, [fileId]);
-
-  return (
-    <div className="w-full max-w-md mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-md mt-4 flex flex-col items-center">
-      {loading && <Loading text="Đang kiểm tra trạng thái..." size="md" />}
-      {!loading && status === 'PROCESSING' && (
+const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId: string }> = ({ status, loading, fileId }) => {
+  if (loading) return <Loading text="Đang kiểm tra trạng thái..." size="md" />;
+  switch (status) {
+    case 'QUEUED_AND_CONVERTED':
+    case 'PROCESSING':
+      return (
         <div className="flex flex-col items-center">
-          <Loading text="Đang xử lý..." size="md" />
-          <p className="mt-2 text-base text-gray-700">Vui lòng chờ trong giây lát.</p>
+          <Loading text="Đang chuyển đổi file, vui lòng chờ..." size="md" />
         </div>
-      )}
-      {!loading && status === 'SUCCESS' && (
+      );
+    case 'UPLOADED':
+      return (
+        <div className="flex flex-col items-center">
+          <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+          <p className="mt-2 text-base text-gray-700">Đang xác thực file, vui lòng chờ...</p>
+        </div>
+      );
+    case 'QUEUED_AND_VALIDATED':
+      return (
+        <div className="flex flex-col items-center">
+          <p className="mt-2 text-base text-gray-700">File đã sẵn sàng để chuyển đổi. Bạn có thể bấm nút chuyển đổi.</p>
+        </div>
+      );
+    case 'SUCCESS':
+      return (
         <div className="flex flex-col items-center">
           <div className="text-green-600 text-3xl mb-2">✔️</div>
           <p className="text-lg font-semibold mb-2">Chuyển đổi thành công!</p>
@@ -76,14 +65,66 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({ fileId }) => {
             <FileDownloader fileId={fileId} />
           </div>
         </div>
-      )}
-      {!loading && status === 'FAILED' && (
+      );
+    case 'FAILED':
+      return (
         <div className="flex flex-col items-center">
           <div className="text-red-500 text-3xl mb-2">❌</div>
           <p className="text-lg font-semibold mb-2">Chuyển đổi thất bại.</p>
           <p className="text-base text-gray-700">Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
         </div>
-      )}
+      );
+    default:
+      return null;
+  }
+};
+
+const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({ fileId, onStatusChange }) => {
+  const [status, setStatus] = useState<Status | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  };
+
+  const fetchStatus = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await axios.get<StatusResponse>(`/file/status/${fileId}`);
+      setStatus(res.data.status);
+      if (onStatusChange) onStatusChange(res.data.status);
+      setLoading(false);
+      if (res.data.status === 'SUCCESS' || res.data.status === 'FAILED') {
+        clearPolling();
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setStatus(null);
+      if (onStatusChange) onStatusChange(null);
+      setError(getErrorMessage(err));
+      clearPolling();
+    }
+  }, [fileId, onStatusChange]);
+
+  useEffect(() => {
+    setLoading(true);
+    setStatus(null);
+    setError(null);
+    fetchStatus();
+    pollingRef.current = setInterval(fetchStatus, 3000);
+    return () => {
+      clearPolling();
+    };
+  }, [fileId, fetchStatus]);
+
+  return (
+    <div className="w-full max-w-md mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-md mt-4 flex flex-col items-center">
+      <StatusContent status={status} loading={loading} fileId={fileId} />
       {!loading && error && (
         <div className="flex flex-col items-center mt-4">
           <div className="text-red-500 text-2xl mb-2">⚠️</div>

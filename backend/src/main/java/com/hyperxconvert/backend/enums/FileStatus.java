@@ -1,12 +1,11 @@
 package com.hyperxconvert.backend.enums;
 
 public enum FileStatus {
-    PENDING("PENDING"),
     UPLOADED("UPLOADED"),
-    CONVERTING("CONVERTING"),
-    CONVERTED("CONVERTED"),
-    FAILED("FAILED"),
-    EXPIRED("EXPIRED");
+    QUEUED_AND_VALIDATED("QUEUED_AND_VALIDATED"),
+    QUEUED_AND_CONVERTED("QUEUED_AND_CONVERTED"),
+    SUCCESS("SUCCESS"),
+    FAILED("FAILED");
     
     private final String value;
     

@@ -1,9 +1,10 @@
 package com.hyperxconvert.backend.service;
 
-import com.hyperxconvert.backend.dto.UploadUrlRequest;
-import com.hyperxconvert.backend.dto.UploadUrlResponse;
-import com.hyperxconvert.backend.dto.FileConvertRequest;
-import com.hyperxconvert.backend.dto.FileConvertResponse;
+import com.hyperxconvert.backend.dto.ConvertQueueMessage;
+import com.hyperxconvert.backend.dto.request.UploadUrlRequest;
+import com.hyperxconvert.backend.dto.response.UploadUrlResponse;
+import com.hyperxconvert.backend.dto.request.FileConvertRequest;
+import com.hyperxconvert.backend.dto.response.FileConvertResponse;
 import com.hyperxconvert.backend.entity.ConvertLog;
 import com.hyperxconvert.backend.entity.File;
 import com.hyperxconvert.backend.enums.FileStatus;
@@ -23,47 +24,31 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
-import java.util.Optional;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import com.hyperxconvert.backend.constant.FileFormatConstants;
+import com.hyperxconvert.backend.enums.FileFormat;
 
 @Service
-public class FileService {
+public class FileManagementService {
     private final FileRepository fileRepository;
     private final ConvertLogRepository convertLogRepository;
     private final S3Service s3Service;
     private final int maxDailyUploads;
     private final MessageSource messageSource;
-    private final List<String> allowedContentTypes = Arrays.asList(
-            "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "image/jpeg",
-            "image/png",
-            "video/mp4"
-    );
-    private final List<String> allowedExtensions = Arrays.asList("pdf", "docx", "jpg", "png", "mp4");
 
     @Autowired
     private SqsClient sqsClient;
 
     @Value("${aws.sqs.convert-queue}")
     private String convertQueueUrl;
+    private static final Logger logger = LoggerFactory.getLogger(FileManagementService.class);
 
-    private static final List<String> SUPPORTED_FORMATS = Arrays.asList(
-            "PDF", "DOCX", "JPG", "PNG", "MP3", "COMPRESSED_PDF", "COMPRESSED_VIDEO"
-    );
-
-    @Autowired
-    private S3StorageService s3StorageService;
-    private static final Logger logger = LoggerFactory.getLogger(FileService.class);
-
-    public FileService(FileRepository fileRepository, ConvertLogRepository convertLogRepository, S3Service s3Service,
-                      @Value("${app.upload.max-daily-uploads:5}") int maxDailyUploads,
-                      MessageSource messageSource) {
+    public FileManagementService(FileRepository fileRepository, ConvertLogRepository convertLogRepository, S3Service s3Service,
+                                 @Value("${app.upload.max-daily-uploads:5}") int maxDailyUploads,
+                                 MessageSource messageSource) {
         this.fileRepository = fileRepository;
         this.convertLogRepository = convertLogRepository;
         this.s3Service = s3Service;
@@ -73,66 +58,92 @@ public class FileService {
 
     @Transactional
     public UploadUrlResponse createPresignedUploadUrl(UploadUrlRequest request, HttpServletRequest httpRequest) {
-        String ipAddress = extractClientIp(httpRequest);
-        validateLimit(ipAddress);
-        validateFile(request);
-        String extension = getExtension(request.getFileName());
-        validateExtensionAndContentType(extension, request.getContentType());
-        UUID fileId = UUID.randomUUID();
-        String s3Key = String.format("uploads/%s/%s.%s", ipAddress, fileId, extension);
-        String presignedUrl = s3Service.generatePresignedUploadUrl(s3Key, request.getContentType());
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        LocalDateTime expiresAt = now.plusHours(24);
-        // Lưu file metadata
-        File file = new File(fileId, ipAddress, s3Key, extension.toUpperCase(), null, FileStatus.UPLOADED.name(), now, expiresAt);
+        long startTime = System.nanoTime();
+        try {
+            String ipAddress = extractClientIp(httpRequest);
+            validateLimit(ipAddress);
+            validateFile(request);
+            String extension = getExtension(request.getFileName());
+            validateExtensionAndContentType(extension, request.getContentType());
+            UUID fileId = UUID.randomUUID();
+            String s3Key = String.format("uploads/%s/%s.%s", ipAddress, fileId, extension);
+            String presignedUrl = s3Service.generatePresignedUploadUrl(s3Key, request.getContentType(), Duration.ofHours(24));
+            LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+            LocalDateTime expiresAt = now.plusHours(24);
+            saveFileAndLog(fileId, ipAddress, s3Key, extension, now, expiresAt);
+            return new UploadUrlResponse(fileId.toString(), presignedUrl, "URL_GENERATED", expiresAt.toString());
+        } finally {
+            long durationMs = (System.nanoTime() - startTime) / 1_000_000;
+            logger.info("[MONITOR] Processing upload .......... {}s", String.format("%.1f", durationMs / 1000.0));
+        }
+    }
+
+    private void saveFileAndLog(UUID fileId, String ipAddress, String s3Key, String extension, LocalDateTime now, LocalDateTime expiresAt) {
+        File file = new File(fileId, ipAddress, s3Key, extension.toUpperCase(), null, FileStatus.UPLOADED.name(), expiresAt);
+        file.setCreatedAt(now);
+        file.setUpdatedAt(now);
         fileRepository.save(file);
-        // Lưu log convert
         ConvertLog log = new ConvertLog();
         log.setId(UUID.randomUUID());
         log.setFileId(fileId);
         log.setUserIp(ipAddress);
-        log.setStatus("UPLOADED");
-        log.setStartedAt(now);
+        log.setStatus(FileStatus.UPLOADED.name());
         log.setCreatedAt(now);
+        log.setUpdatedAt(now);
         convertLogRepository.save(log);
-        logger.info("Đã tạo presigned URL cho fileId: {}, expiresAt: {}", fileId, expiresAt);
-        return new UploadUrlResponse(fileId.toString(), presignedUrl, "URL_GENERATED", expiresAt.toString());
     }
 
     public FileConvertResponse processFileConvertRequest(FileConvertRequest request) {
-        // 1. Kiểm tra fileId tồn tại
-        UUID fileId;
+        UUID fileId = parseFileId(request.getFileId());
+        File file = getFileOrThrow(fileId);
+        validateFileStatusForConversion(file);
+        String targetFormat = validateAndGetTargetFormat(request.getTargetFormat());
+        UUID jobId = logConversionJob(fileId, file.getUserIp());
+        sendMessageToSqsWithRetry(fileId, targetFormat, file.getOriginalPath());
+        return new FileConvertResponse(jobId.toString(), FileStatus.QUEUED_AND_VALIDATED.name());
+    }
+
+    private UUID parseFileId(String fileIdStr) {
         try {
-            fileId = UUID.fromString(request.getFileId());
+            return UUID.fromString(fileIdStr);
         } catch (Exception e) {
             throw new ApiException("FILE_NOT_FOUND", "error.file.not.found");
         }
-        Optional<File> fileOpt = fileRepository.findById(fileId);
-        if (fileOpt.isEmpty()) {
-            throw new ApiException("FILE_NOT_FOUND", "error.file.not.found");
-        }
-        File file = fileOpt.get();
-        // 2. Kiểm tra trạng thái file
-        if (!"PROCESSING".equalsIgnoreCase(file.getStatus())) {
-            logger.error("FileId: {}, current status: {}", fileId, file.getStatus());
+    }
+
+    private File getFileOrThrow(UUID fileId) {
+        return fileRepository.findById(fileId).orElseThrow(() -> new ApiException("FILE_NOT_FOUND", "error.file.not.found"));
+    }
+
+    private void validateFileStatusForConversion(File file) {
+        if (!FileStatus.QUEUED_AND_VALIDATED.name().equalsIgnoreCase(file.getStatus())) {
+            logger.error("FileId: {}, current status: {}", file.getFileId(), file.getStatus());
             throw new ApiException("FILE_NOT_READY", "error.file.not.ready");
         }
-        // 3. Validate targetFormat
-        String targetFormat = request.getTargetFormat().toUpperCase();
-        if (!SUPPORTED_FORMATS.contains(targetFormat)) {
+    }
+
+    private String validateAndGetTargetFormat(String targetFormat) {
+        FileFormat format = FileFormat.fromString(targetFormat);
+        if (format == null || !FileFormatConstants.SUPPORTED_FORMATS.contains(format)) {
             throw new ApiException("UNSUPPORTED_FORMAT", "error.unsupported.format");
         }
-        // 4. Ghi log job
+        return format.name();
+    }
+
+    private UUID logConversionJob(UUID fileId, String userIp) {
         UUID jobId = UUID.randomUUID();
         ConvertLog log = new ConvertLog();
         log.setId(jobId);
         log.setFileId(fileId);
-        log.setUserIp(file.getUserIp());
-        log.setStatus("QUEUED");
-        log.setStartedAt(LocalDateTime.now());
+        log.setUserIp(userIp);
+        log.setStatus(FileStatus.QUEUED_AND_CONVERTED.name());
         log.setCreatedAt(LocalDateTime.now());
+        log.setUpdatedAt(LocalDateTime.now());
         convertLogRepository.save(log);
-        // 5. Đẩy message vào SQS với retry logic
+        return jobId;
+    }
+
+    private void sendMessageToSqsWithRetry(UUID fileId, String targetFormat, String originalPath) {
         int maxRetries = 3;
         int[] backoffSeconds = {2, 4, 8};
         boolean sent = false;
@@ -141,7 +152,7 @@ public class FileService {
             try {
                 ObjectMapper objectMapper = new ObjectMapper();
                 String messageBody = objectMapper.writeValueAsString(
-                    new ConvertQueueMessage(fileId.toString(), targetFormat, file.getOriginalPath())
+                    new ConvertQueueMessage(fileId.toString(), targetFormat, originalPath)
                 );
                 SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
                         .queueUrl(convertQueueUrl)
@@ -163,9 +174,9 @@ public class FileService {
             }
         }
         if (!sent) {
+            logger.error("Failed to send SQS message after retries", lastException);
             throw new ApiException("SYSTEM_ERROR", "error.internal");
         }
-        return new FileConvertResponse(jobId.toString(), "PROCESSING");
     }
 
     public Map<String, Object> getFileStatus(String fileId) {
@@ -174,8 +185,8 @@ public class FileService {
             File file = fileRepository.findById(uuid).orElseThrow(() -> new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_FOUND", "error.file.not.found"));
             Map<String, Object> result = new HashMap<>();
             result.put("status", file.getStatus());
-            if ("SUCCESS".equalsIgnoreCase(file.getStatus()) && file.getConvertedPath() != null) {
-                String presignedUrl = s3StorageService.generatePresignedUrl(file.getConvertedPath(), Duration.ofHours(24));
+            if (FileStatus.SUCCESS.name().equalsIgnoreCase(file.getStatus()) && file.getConvertedPath() != null) {
+                String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), Duration.ofHours(24));
                 result.put("downloadUrl", presignedUrl);
             }
             return result;
@@ -191,21 +202,20 @@ public class FileService {
     public Map<String, Object> getDownloadUrl(String fileId) {
         try {
             UUID uuid = UUID.fromString(fileId);
-            File file = fileRepository.findById(uuid).orElseThrow(() -> new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File không tồn tại hoặc chưa được chuyển đổi thành công -> getDownloadUrl(String fileId)"));
-            if (!"SUCCESS".equalsIgnoreCase(file.getStatus()) || file.getConvertedPath() == null) {
-                logger.error("[FileService] FileId {} chưa được chuyển đổi thành công hoặc không có convertedPath", fileId);
-                logger.error("getDownloadUrl(String fileId) if...");
-                throw new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File không tồn tại hoặc chưa được chuyển đổi thành công");
+            File file = fileRepository.findById(uuid).orElseThrow(() -> new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted"));
+            if (!FileStatus.SUCCESS.name().equalsIgnoreCase(file.getStatus()) || file.getConvertedPath() == null) {
+                logger.error("[FileService] FileId {} has not been successfully converted or convertedPath is missing", fileId);
+                throw new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted");
             }
-            String presignedUrl = s3StorageService.generatePresignedUrl(file.getConvertedPath(), Duration.ofHours(24));
+            String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), Duration.ofHours(24));
             Map<String, Object> result = new HashMap<>();
             result.put("preSignedUrl", presignedUrl);
             return result;
         } catch (com.hyperxconvert.backend.exception.ApiException e) {
-            logger.error("[FileService] File không tồn tại hoặc chưa được chuyển đổi thành công: {}", fileId);
+            logger.error("[FileService] File does not exist or has not been successfully converted: {}", fileId);
             throw e;
         } catch (Exception e) {
-            logger.error("[FileService] Lỗi hệ thống khi tạo URL tải xuống: {}", e.getMessage(), e);
+            logger.error("[FileService] System error when generating download URL: {}", e.getMessage(), e);
             throw new RuntimeException("SYSTEM_ERROR");
         }
     }
@@ -222,13 +232,13 @@ public class FileService {
         if (request.getFileSize() > 52428800) {
             throw new ApiException("FILE_TOO_LARGE", "error.file.too.large");
         }
-        if (!allowedContentTypes.contains(request.getContentType())) {
+        if (!FileFormatConstants.ALLOWED_CONTENT_TYPES.contains(request.getContentType())) {
             throw new ApiException("UNSUPPORTED_FORMAT", "error.unsupported.format");
         }
     }
 
     private void validateExtensionAndContentType(String extension, String contentType) {
-        if (!allowedExtensions.contains(extension.toLowerCase())) {
+        if (!FileFormatConstants.ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
             throw new ApiException("UNSUPPORTED_FORMAT", "error.unsupported.format");
         }
         if (!isExtensionMatchContentType(extension, contentType)) {
@@ -237,14 +247,8 @@ public class FileService {
     }
 
     private boolean isExtensionMatchContentType(String extension, String contentType) {
-        switch (extension.toLowerCase()) {
-            case "pdf": return contentType.equals("application/pdf");
-            case "docx": return contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-            case "jpg": return contentType.equals("image/jpeg");
-            case "png": return contentType.equals("image/png");
-            case "mp4": return contentType.equals("video/mp4");
-            default: return false;
-        }
+        String expectedContentType = FileFormatConstants.EXTENSION_TO_CONTENT_TYPE.get(extension.toLowerCase());
+        return contentType.equals(expectedContentType);
     }
 
     private String getExtension(String fileName) {
@@ -267,20 +271,4 @@ public class FileService {
         return request.getRemoteAddr();
     }
 
-    // DTO cho message gửi vào convert-queue
-    public static class ConvertQueueMessage {
-        private String fileId;
-        private String targetFormat;
-        private String originalPath;
-
-        public ConvertQueueMessage(String fileId, String targetFormat, String originalPath) {
-            this.fileId = fileId;
-            this.targetFormat = targetFormat;
-            this.originalPath = originalPath;
-        }
-
-        public String getFileId() { return fileId; }
-        public String getTargetFormat() { return targetFormat; }
-        public String getOriginalPath() { return originalPath; }
-    }
 } 

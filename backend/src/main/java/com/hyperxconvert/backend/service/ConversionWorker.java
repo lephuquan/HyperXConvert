@@ -16,53 +16,48 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.hyperxconvert.backend.service.S3StorageService;
-import com.hyperxconvert.backend.service.VirusScanService;
-import com.hyperxconvert.backend.service.FileConversionService;
+import com.hyperxconvert.backend.enums.FileStatus;
 import org.apache.tika.Tika;
 import java.io.File;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import java.net.URI;
-import org.springframework.context.annotation.Bean;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.io.FileInputStream;
+import com.hyperxconvert.backend.constant.FileFormatConstants;
+import com.hyperxconvert.backend.enums.FileFormat;
+import org.springframework.context.MessageSource;
+import java.util.Locale;
 
 @Slf4j
 @Service
-public class ConversionWorkerService {
+public class ConversionWorker {
     private final SqsClient sqsClient;
     private final ObjectMapper objectMapper;
     private final FileRepository fileRepository;
     private final ConvertLogRepository convertLogRepository;
-    // Inject các service phụ: S3, conversion, virus scan (bổ sung sau)
+    private final MessageSource messageSource;
 
     @Autowired
-    private S3StorageService s3StorageService;
+    private S3Service s3Service;
+
     @Autowired
-    private VirusScanService virusScanService;
-    @Autowired
-    private FileConversionService fileConversionService;
+    private ConversionGateway fileConversionService;
 
     private final Tika tika = new Tika();
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-    private static final String[] SUPPORTED_FORMATS = {"PDF", "DOCX", "JPG", "PNG", "MP4"};
     private static final int MAX_RETRIES = 3;
     private static final int[] BACKOFF_SECONDS = {2, 4, 8};
 
     @Value("${aws.sqs.convert-queue}")
     private String convertQueueUrl;
-    @Value("${aws.sqs.dlq-convert-queue}")
-    private String dlqConvertQueueUrl;
 
-    public ConversionWorkerService(SqsClient sqsClient, ObjectMapper objectMapper,
-                                   FileRepository fileRepository, ConvertLogRepository convertLogRepository) {
+    public ConversionWorker(SqsClient sqsClient, ObjectMapper objectMapper,
+                            FileRepository fileRepository, ConvertLogRepository convertLogRepository,
+                            MessageSource messageSource) {
         this.sqsClient = sqsClient;
         this.objectMapper = objectMapper;
         this.fileRepository = fileRepository;
         this.convertLogRepository = convertLogRepository;
+        this.messageSource = messageSource;
     }
 
     @Scheduled(fixedRate = 1000)
@@ -89,7 +84,8 @@ public class ConversionWorkerService {
     }
 
     private void processMessage(Message msg) {
-        LocalDateTime startedAt = LocalDateTime.now();
+        long startTime = System.nanoTime();
+        LocalDateTime now = LocalDateTime.now();
         com.hyperxconvert.backend.entity.File fileEntity = null;
         File inputFile = null;
         File convertedFile = null;
@@ -100,53 +96,57 @@ public class ConversionWorkerService {
                 receiveCount = Integer.parseInt(msg.attributes().get("ApproximateReceiveCount"));
             }
             ConvertQueueMessage job = objectMapper.readValue(msg.body(), ConvertQueueMessage.class);
-            log.info("[ConversionWorker] Nhận job chuyển đổi: {} (lần thử: {})", job, receiveCount);
-            // 1. Lấy file entity từ DB
+            log.info("[ConversionWorker] Received conversion job: {} (attempt: {})", job, receiveCount);
+            // 1. Get file entity from DB
             Optional<com.hyperxconvert.backend.entity.File> fileOpt = fileRepository.findById(UUID.fromString(job.getFileId()));
-            if (fileOpt.isEmpty()) throw new Exception("FILE_NOT_FOUND");
+            if (fileOpt.isEmpty()) throw new Exception("error.file.not.found");
             fileEntity = fileOpt.get();
-            // 2. Tải file từ S3
-            inputFile = s3StorageService.downloadFile(job.getOriginalPath());
-            // 2.1 Nếu chuyển đổi DOCX -> PDF, copy file tạm thành .docx
+            // 2. Download file from S3
+            inputFile = s3Service.downloadFileFromS3(job.getOriginalPath());
+            // 2.1 If converting DOCX -> PDF, copy temp file as .docx
             File realInputFile = inputFile;
-            if ("DOCX".equalsIgnoreCase(fileEntity.getFormatFrom()) && "PDF".equalsIgnoreCase(job.getTargetFormat())) {
+            FileFormat formatFromEnum = FileFormat.fromString(fileEntity.getFormatFrom());
+            FileFormat targetFormatEnum = FileFormat.fromString(job.getTargetFormat());
+            if (formatFromEnum == FileFormat.DOCX && targetFormatEnum == FileFormat.PDF) {
                 File docxFile = Files.createTempFile("input-", ".docx").toFile();
                 Files.copy(inputFile.toPath(), docxFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 realInputFile = docxFile;
-                // Kiểm tra file đầu vào thực sự là DOCX
+                // Validate input file is actually DOCX
                 if (!isDocxFile(realInputFile)) {
-                    throw new Exception("INPUT_ERROR: File không phải DOCX hợp lệ");
+                    throw new Exception("error.invalid.extension");
                 }
             }
-            // 3. Validate kích thước
-            if (realInputFile.length() > MAX_FILE_SIZE) throw new Exception("FILE_TOO_LARGE");
-            // 3. Validate định dạng
+            // 3. Validate file size
+            if (realInputFile.length() > MAX_FILE_SIZE) throw new Exception("error.file.too.large");
+            // 3. Validate format
             String mimeType = tika.detect(realInputFile);
-            String format = getFormatFromMimeType(mimeType);
-            boolean supported = false;
-            for (String f : SUPPORTED_FORMATS) {
-                if (f.equalsIgnoreCase(format)) { supported = true; break; }
-            }
-            if (!supported) throw new Exception("UNSUPPORTED_FORMAT");
-            // 4. Quét virus
-//            virusScanService.scanFile(realInputFile);
-            // 5. Chuyển đổi file
+            FileFormat detectedFormat = FileFormatConstants.MIME_TYPE_TO_FORMAT.get(mimeType);
+            boolean supported = FileFormatConstants.SUPPORTED_FORMATS.contains(detectedFormat);
+            if (!supported) throw new Exception("error.unsupported.format");
+            // 4. Virus scan (skipped)
+            // 5. Convert file
             convertedFile = fileConversionService.convert(realInputFile, fileEntity.getFormatFrom(), job.getTargetFormat());
-            // 6. Upload file kết quả lên S3
+            // 6. Upload result file to S3
             String convertedKey = String.format("converted/%s/%s.%s", fileEntity.getUserIp(), fileEntity.getFileId(), job.getTargetFormat().toLowerCase());
-            s3StorageService.uploadFile(convertedKey, convertedFile, "application/octet-stream");
-            // 7. Cập nhật DB: files, convert_queue_logs
-            fileEntity.setStatus("SUCCESS");
+            s3Service.uploadFileToS3(convertedKey, convertedFile, "application/octet-stream");
+            // 7. Update DB: files, convert_queue_logs
+            fileEntity.setStatus(FileStatus.SUCCESS.name());
             fileEntity.setConvertedPath(convertedKey);
             fileRepository.save(fileEntity);
-            ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), "SUCCESS", startedAt, LocalDateTime.now(), null, LocalDateTime.now());
+            ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), FileStatus.SUCCESS.name(), now, null, now, now);
             convertLogRepository.save(logEntry);
-            // 8. Xóa message khỏi queue
+            // 8. Delete message from queue
             sqsClient.deleteMessage(DeleteMessageRequest.builder().queueUrl(convertQueueUrl).receiptHandle(msg.receiptHandle()).build());
         } catch (Exception e) {
             errorCode = e.getMessage();
-            log.error("[ConversionWorker] Lỗi xử lý message: {}", errorCode, e);
-            // Retry nếu chưa vượt quá số lần thử
+            String errorMsg = errorCode;
+            try {
+                errorMsg = messageSource.getMessage(errorCode, null, errorCode, Locale.getDefault());
+            } catch (Exception ex) {
+                // fallback to errorCode
+            }
+            log.error("[ConversionWorker] Error processing message: {}", errorMsg, e);
+            // Retry if not exceeded max attempts
             if (msg.attributes().containsKey("ApproximateReceiveCount")) {
                 receiveCount = Integer.parseInt(msg.attributes().get("ApproximateReceiveCount"));
             }
@@ -157,38 +157,29 @@ public class ConversionWorkerService {
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
-                log.warn("[ConversionWorker] Sẽ thử lại job sau {} giây (lần thử: {})", backoff, receiveCount + 1);
-                // Không xóa message khỏi queue, SQS sẽ tự động retry
+                log.warn("[ConversionWorker] Will retry job after {} seconds (attempt: {})", backoff, receiveCount + 1);
+                // Do not delete message, SQS will retry
             } else {
-                // Gửi vào DLQ (hoặc để SQS chuyển vào DLQ nếu cấu hình RedrivePolicy)
-                log.error("[ConversionWorker] Đã vượt quá số lần thử, gửi vào DLQ hoặc để SQS xử lý.");
-                // Xóa message khỏi queue chính để tránh lặp vô hạn
+                // Send to DLQ (or let SQS handle if RedrivePolicy is set)
+                log.error("[ConversionWorker] Exceeded max retry attempts, sending to DLQ or letting SQS handle.");
+                // Delete message from main queue to avoid infinite loop
                 sqsClient.deleteMessage(DeleteMessageRequest.builder().queueUrl(convertQueueUrl).receiptHandle(msg.receiptHandle()).build());
             }
-            // Cập nhật DB trạng thái FAILED
+            // Update DB status to FAILED
             if (fileEntity != null) {
-                fileEntity.setStatus("FAILED");
+                fileEntity.setStatus(FileStatus.FAILED.name());
                 fileRepository.save(fileEntity);
                 String shortErrorCode = (errorCode != null && errorCode.length() > 50) ? errorCode.substring(0, 50) : errorCode;
-                ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), "FAILED", startedAt, LocalDateTime.now(), shortErrorCode, LocalDateTime.now());
+                ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), FileStatus.FAILED.name(), now, shortErrorCode, now, now);
                 convertLogRepository.save(logEntry);
             }
         } finally {
-            // Dọn dẹp file tạm
+            // Clean up temp files
             if (inputFile != null && inputFile.exists()) inputFile.delete();
             if (convertedFile != null && convertedFile.exists()) convertedFile.delete();
+            long durationMs = (System.nanoTime() - startTime) / 1_000_000;
+            log.info("[MONITOR] QUEUED AND CONVERTED in .......... {}s", String.format("%.1f", durationMs / 1000.0));
         }
     }
 
-    private String getFormatFromMimeType(String mimeType) {
-        switch (mimeType) {
-            case "application/pdf": return "PDF";
-            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document": return "DOCX";
-            case "application/x-tika-ooxml": return "DOCX"; // Bổ sung mapping cho DOCX
-            case "image/jpeg": return "JPG";
-            case "image/png": return "PNG";
-            case "video/mp4": return "MP4";
-            default: return "UNKNOWN";
-        }
-    }
 } 

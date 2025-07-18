@@ -1,4 +1,4 @@
-package com.hyperxconvert.backend.dto;
+package com.hyperxconvert.backend.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -11,7 +11,6 @@ import java.util.UUID;
 @Table(name = "files")
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class File {
     
     @Id
@@ -36,25 +35,23 @@ public class File {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
     
-    @Column(name = "upload_time", nullable = false)
-    private LocalDateTime uploadTime;
-    
     @Column(name = "expiry_time", nullable = false)
     private LocalDateTime expiryTime;
     
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
     // Constructor with required fields for creating new files
-    public File(UUID fileId, String userIp, String originalPath, String formatFrom, 
-                String formatTo, String status, LocalDateTime uploadTime, LocalDateTime expiryTime) {
+    public File(UUID fileId, String userIp, String originalPath, String formatFrom, String formatTo, String status, LocalDateTime expiryTime) {
         this.fileId = fileId;
         this.userIp = userIp;
         this.originalPath = originalPath;
         this.formatFrom = formatFrom;
         this.formatTo = formatTo;
         this.status = status;
-        this.uploadTime = uploadTime;
         this.expiryTime = expiryTime;
         this.createdAt = LocalDateTime.now();
     }
