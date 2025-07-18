@@ -39,7 +39,7 @@ public class FileController {
 
     @GetMapping("/status/{fileId}")
     public ResponseEntity<?> getFileStatus(@PathVariable String fileId) {
-        final String method = "getFileStatus";
+        final String method = "GetFileStatus";
         logger.info("[{}] Request received for fileId: {}", method, fileId);
         return ResponseEntity.ok(fileService.getFileStatus(fileId));
     }

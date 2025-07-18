@@ -178,7 +178,7 @@ public class ConversionWorker {
             if (inputFile != null && inputFile.exists()) inputFile.delete();
             if (convertedFile != null && convertedFile.exists()) convertedFile.delete();
             long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            log.info("QUEUED AND CONVERTED in .......... {}s", String.format("%.1f", durationMs / 1000.0));
+            log.info("[MONITOR] QUEUED AND CONVERTED in .......... {}s", String.format("%.1f", durationMs / 1000.0));
         }
     }
 

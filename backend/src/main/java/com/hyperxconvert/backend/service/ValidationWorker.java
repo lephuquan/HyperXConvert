@@ -103,7 +103,7 @@ public class ValidationWorker {
         } finally {
             long durationMs = (System.nanoTime() - start) / 1_000_000;
            deleteSqsMessage(message);
-            log.info("QUEUED AND VALIDATED in .......... {}s", String.format("%.1f", durationMs / 1000.0));
+            log.info("[MONITOR] QUEUED AND VALIDATED in .......... {}s", String.format("%.1f", durationMs / 1000.0));
         }
     }
 
@@ -237,7 +237,6 @@ public class ValidationWorker {
                 .queueUrl(uploadQueueUrl)
                 .receiptHandle(message.receiptHandle())
                 .build());
-            log.info("Deleted message from SQS: {}", message.messageId());
         } catch (Exception e) {
             log.error("Failed to delete message from SQS: {}", e.getMessage(), e);
         }

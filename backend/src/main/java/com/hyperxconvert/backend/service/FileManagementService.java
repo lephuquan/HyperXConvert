@@ -58,19 +58,24 @@ public class FileManagementService {
 
     @Transactional
     public UploadUrlResponse createPresignedUploadUrl(UploadUrlRequest request, HttpServletRequest httpRequest) {
-        String ipAddress = extractClientIp(httpRequest);
-        validateLimit(ipAddress);
-        validateFile(request);
-        String extension = getExtension(request.getFileName());
-        validateExtensionAndContentType(extension, request.getContentType());
-        UUID fileId = UUID.randomUUID();
-        String s3Key = String.format("uploads/%s/%s.%s", ipAddress, fileId, extension);
-        String presignedUrl = s3Service.generatePresignedUploadUrl(s3Key, request.getContentType(), Duration.ofHours(24));
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        LocalDateTime expiresAt = now.plusHours(24);
-        saveFileAndLog(fileId, ipAddress, s3Key, extension, now, expiresAt);
-        logger.info("Generated presigned URL for fileId: {}, expiresAt: {}", fileId, expiresAt);
-        return new UploadUrlResponse(fileId.toString(), presignedUrl, "URL_GENERATED", expiresAt.toString());
+        long startTime = System.nanoTime();
+        try {
+            String ipAddress = extractClientIp(httpRequest);
+            validateLimit(ipAddress);
+            validateFile(request);
+            String extension = getExtension(request.getFileName());
+            validateExtensionAndContentType(extension, request.getContentType());
+            UUID fileId = UUID.randomUUID();
+            String s3Key = String.format("uploads/%s/%s.%s", ipAddress, fileId, extension);
+            String presignedUrl = s3Service.generatePresignedUploadUrl(s3Key, request.getContentType(), Duration.ofHours(24));
+            LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+            LocalDateTime expiresAt = now.plusHours(24);
+            saveFileAndLog(fileId, ipAddress, s3Key, extension, now, expiresAt);
+            return new UploadUrlResponse(fileId.toString(), presignedUrl, "URL_GENERATED", expiresAt.toString());
+        } finally {
+            long durationMs = (System.nanoTime() - startTime) / 1_000_000;
+            logger.info("[MONITOR] Processing upload .......... {}s", String.format("%.1f", durationMs / 1000.0));
+        }
     }
 
     private void saveFileAndLog(UUID fileId, String ipAddress, String s3Key, String extension, LocalDateTime now, LocalDateTime expiresAt) {
@@ -113,7 +118,7 @@ public class FileManagementService {
     private void validateFileStatusForConversion(File file) {
         if (!FileStatus.QUEUED_AND_VALIDATED.name().equalsIgnoreCase(file.getStatus())) {
             logger.error("FileId: {}, current status: {}", file.getFileId(), file.getStatus());
-            throw new ApiException("FILE_NOT_READY", String.format("error.file.not.ready. Current status: %s", file.getStatus()));
+            throw new ApiException("FILE_NOT_READY", "error.file.not.ready");
         }
     }
 
@@ -197,7 +202,7 @@ public class FileManagementService {
     public Map<String, Object> getDownloadUrl(String fileId) {
         try {
             UUID uuid = UUID.fromString(fileId);
-            File file = fileRepository.findById(uuid).orElseThrow(() -> new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted -> getDownloadUrl(String fileId)"));
+            File file = fileRepository.findById(uuid).orElseThrow(() -> new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted"));
             if (!FileStatus.SUCCESS.name().equalsIgnoreCase(file.getStatus()) || file.getConvertedPath() == null) {
                 logger.error("[FileService] FileId {} has not been successfully converted or convertedPath is missing", fileId);
                 throw new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted");

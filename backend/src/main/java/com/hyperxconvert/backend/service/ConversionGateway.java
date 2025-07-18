@@ -41,7 +41,7 @@ public class ConversionGateway {
             }
         } finally {
             long durationMs = (System.nanoTime() - start) / 1_000_000;
-            log.info("Processing conversion in .......... {}s", String.format("%.1f", durationMs / 1000.0));
+            log.info("[MONITOR] Processing conversion in .......... {}s", String.format("%.1f", durationMs / 1000.0));
         }
     }
 
