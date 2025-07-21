@@ -51,7 +51,7 @@ export function useFileUpload(): UseFileUploadResult {
       const { uploadUrl, fileId: uploadedFileId } = uploadResponse.data;
 
       if (!uploadUrl) {
-        toast.error('Không lấy được uploadUrl từ backend!');
+        toast.error(t('no_upload_url', 'Không lấy được uploadUrl từ backend!'));
         setUploadStatus('error');
         return;
       }

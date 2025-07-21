@@ -42,6 +42,7 @@ const FileConverter: React.FC = () => {
     formatError,
     handleConvert,
     resetConvert,
+    setConvertStatus,
   } = useFileConvert();
 
   // Reset tất cả state liên quan khi chọn file mới
@@ -141,45 +142,55 @@ const FileConverter: React.FC = () => {
       {uploadStatus === 'uploading' && (
         <UploadProgress progress={uploadProgress} />
       )}
-      {uploadStatus === 'completed' && selectedFile && (
-        <div className="mt-6">
-          {/* Component chọn định dạng chuyển đổi */}
-          <FormatSelector
-            fileExtension={fileExtension}
-            onFormatChange={setTargetFormat}
-            disabled={convertLoading || fileStatus === 'UPLOADED'}
-          />
-          {/* Nút Chuyển đổi */}
-          <button
-            className="mt-4 bg-blue-500 text-white font-semibold px-4 py-3 rounded-lg w-full hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-400 transition flex items-center justify-center"
-            onClick={onConvertClick}
-            disabled={
-              !targetFormat ||
-              !fileId ||
-              convertLoading ||
-              (!!fileStatus && fileStatus !== 'QUEUED_AND_VALIDATED') ||
-              jobId !== null // Disable nếu đã gửi yêu cầu chuyển đổi
-            }
-          >
-            {convertLoading ? (
-              <span className="flex items-center justify-center">
-                <ClipLoader size={20} color="#fff" />
-                <span className="ml-2">{t('sending_request', 'Đang gửi yêu cầu...')}</span>
-              </span>
-            ) : jobId !== null ? (
-              t('converting', 'Đang chuyển đổi...')
-            ) : (
-              t('convert_btn', 'Chuyển đổi')
-            )}
-          </button>
-          {/* Loader trạng thái xác thực file */}
-          {fileId && (
-            <div className="mt-6">
-              <FileStatusTracker fileId={fileId} onStatusChange={setFileStatus} />
-            </div>
+      <div className="mt-6">
+        {/* Component chọn định dạng chuyển đổi */}
+        <FormatSelector
+          fileExtension={fileExtension}
+          onFormatChange={setTargetFormat}
+          disabled={convertLoading || fileStatus === 'UPLOADED'}
+        />
+        {/* Nút Chuyển đổi */}
+        <button
+          className="mt-4 bg-blue-500 text-white font-semibold px-4 py-3 rounded-lg w-full hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-400 transition flex items-center justify-center"
+          onClick={onConvertClick}
+          disabled={
+            !targetFormat ||
+            !fileId ||
+            convertLoading ||
+            (!!fileStatus && fileStatus !== 'QUEUED_AND_VALIDATED') ||
+            jobId !== null // Disable nếu đã gửi yêu cầu chuyển đổi
+          }
+        >
+          {convertLoading ? (
+            <span className="flex items-center justify-center">
+              <ClipLoader size={20} color="#fff" />
+              <span className="ml-2">{t('sending_request', 'Đang gửi yêu cầu...')}</span>
+            </span>
+          ) : convertStatus === 'SUCCESS' ? (
+            t('convert_success', 'Chuyển đổi thành công!')
+          ) : convertStatus === 'FAILED' ? (
+            t('convert_failed', 'Chuyển đổi thất bại')
+          ) : jobId !== null ? (
+            t('converting', 'Đang chuyển đổi...')
+          ) : (
+            t('convert_btn', 'Chuyển đổi')
           )}
-        </div>
-      )}
+        </button>
+        {/* Loader trạng thái xác thực file */}
+        {fileId && (
+          <div className="mt-6">
+            <FileStatusTracker
+              fileId={fileId}
+              onStatusChange={(status) => {
+                setFileStatus(status);
+                if (status === 'SUCCESS' || status === 'FAILED') {
+                  setConvertStatus(status);
+                }
+              }}
+            />
+          </div>
+        )}
+      </div>
       {/* Hiển thị mọi lỗi qua ErrorMessage */}
       {errorToShow && <ErrorMessage message={errorToShow} />}
     </div>

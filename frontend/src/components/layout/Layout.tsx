@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const NAV_LINKS = [
-  { name: 'Converter', href: '#' },
-  { name: 'History', href: '#' },
-  { name: 'Support', href: '#' },
-];
-
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const NAV_LINKS = [
+    { name: t('nav_converter', 'Converter'), href: '#' },
+    { name: t('nav_history', 'History'), href: '#' },
+    { name: t('nav_support', 'Support'), href: '#' },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-100">
@@ -87,7 +89,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <footer className="bg-white/90 border-t border-gray-200 mt-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col items-center">
           <p className="text-gray-700 text-sm font-medium">&copy; 2025 HyperX Convert MVP</p>
-          <p className="text-gray-400 text-xs mt-1">File conversion made simple. Files are automatically deleted after 24 hours.</p>
+          <p className="text-gray-400 text-xs mt-1">{t('footer_slogan', 'File conversion made simple. Files are automatically deleted after 24 hours.')}</p>
         </div>
       </footer>
     </div>

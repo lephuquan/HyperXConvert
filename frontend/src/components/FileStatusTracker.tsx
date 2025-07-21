@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import axios from '../api/api';
 import Loading from './ui/Loading';
 import FileDownloader from './FileDownloader';
+import { useTranslation } from 'react-i18next';
 
 interface FileStatusTrackerProps {
   fileId: string;
@@ -31,13 +32,14 @@ const getErrorMessage = (err: any): string => {
 };
 
 const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId: string }> = ({ status, loading, fileId }) => {
-  if (loading) return <Loading text="Đang kiểm tra trạng thái..." size="md" />;
+  const { t } = useTranslation();
+  if (loading) return <Loading text={t('checking_status', 'Đang kiểm tra trạng thái...')} size="md" />;
   switch (status) {
     case 'QUEUED_AND_CONVERTED':
     case 'PROCESSING':
       return (
         <div className="flex flex-col items-center">
-          <Loading text="Đang chuyển đổi file, vui lòng chờ..." size="md" />
+          <Loading text={t('converting_file', 'Đang chuyển đổi file, vui lòng chờ...')} size="md" />
         </div>
       );
     case 'UPLOADED':
@@ -47,20 +49,20 @@ const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId:
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
           </svg>
-          <p className="mt-2 text-base text-gray-700">Đang xác thực file, vui lòng chờ...</p>
+          <p className="mt-2 text-base text-gray-700">{t('verifying_file', 'Đang xác thực file, vui lòng chờ...')}</p>
         </div>
       );
     case 'QUEUED_AND_VALIDATED':
       return (
         <div className="flex flex-col items-center">
-          <p className="mt-2 text-base text-gray-700">File đã sẵn sàng để chuyển đổi. Bạn có thể bấm nút chuyển đổi.</p>
+          <p className="mt-2 text-base text-gray-700">{t('ready_to_convert', 'File đã sẵn sàng để chuyển đổi. Bạn có thể bấm nút chuyển đổi.')}</p>
         </div>
       );
     case 'SUCCESS':
       return (
         <div className="flex flex-col items-center">
           <div className="text-green-600 text-3xl mb-2">✔️</div>
-          <p className="text-lg font-semibold mb-2">Chuyển đổi thành công!</p>
+          <p className="text-lg font-semibold mb-2">{t('convert_success', 'Chuyển đổi thành công!')}</p>
           <div className="mt-2 w-full flex justify-center">
             <FileDownloader fileId={fileId} />
           </div>
@@ -70,8 +72,8 @@ const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId:
       return (
         <div className="flex flex-col items-center">
           <div className="text-red-500 text-3xl mb-2">❌</div>
-          <p className="text-lg font-semibold mb-2">Chuyển đổi thất bại.</p>
-          <p className="text-base text-gray-700">Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
+          <p className="text-lg font-semibold mb-2">{t('convert_failed', 'Chuyển đổi thất bại.')}</p>
+          <p className="text-base text-gray-700">{t('try_again_or_contact_support', 'Vui lòng thử lại hoặc liên hệ hỗ trợ.')}</p>
         </div>
       );
     default:

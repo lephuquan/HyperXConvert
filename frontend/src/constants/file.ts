@@ -3,14 +3,14 @@ export const SUPPORTED_FORMATS = ['pdf', 'jpg', 'png', 'mp4', 'docx'] as const;
 export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export const ERROR_MESSAGES = {
-  unsupportedFormat: 'Định dạng file không được hỗ trợ. Vui lòng chọn PDF, JPG, PNG, MP4 hoặc DOCX',
-  fileTooLarge: 'File quá lớn, tối đa 50MB',
-  uploadError: 'Lỗi upload, vui lòng thử lại',
-  s3Error: 'Lỗi upload lên S3, vui lòng thử lại',
-  convertError: 'Lỗi chuyển đổi. Vui lòng thử lại.',
-  fileNotReady: 'File chưa sẵn sàng để chuyển đổi. Vui lòng thử lại.',
-  unsupportedConvert: 'Định dạng chuyển đổi không được hỗ trợ.',
-  invalidResponse: 'Không nhận được phản hồi hợp lệ từ hệ thống.',
+  invalidResponse: 'invalid_response',
+  convertError: 'convert_error',
+  fileNotReady: 'file_not_ready',
+  unsupportedConvert: 'unsupported_convert',
+  unsupportedFormat: 'unsupported_format',
+  fileTooLarge: 'file_too_large',
+  uploadError: 'upload_error',
+  s3Error: 's3_error',
 };
 
 export type FormatOption = { label: string; value: string };

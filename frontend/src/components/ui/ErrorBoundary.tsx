@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { withTranslation } from 'react-i18next';
 
 interface Props {
   children: ReactNode;
@@ -23,35 +24,36 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
+    const { t } = this.props as any;
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="card max-w-md mx-4 text-center">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Oops! Something went wrong
+              {t('error_title', 'Oops! Something went wrong')}
             </h2>
             <p className="text-gray-600 mb-6">
-              We're sorry for the inconvenience. Please try refreshing the page or contact support if the problem persists.
+              {t('error_message', "We're sorry for the inconvenience. Please try refreshing the page or contact support if the problem persists.")}
             </p>
             <div className="space-y-3">
               <button
                 onClick={() => window.location.reload()}
                 className="btn-primary w-full"
               >
-                Refresh Page
+                {t('refresh_page', 'Refresh Page')}
               </button>
               <button
                 onClick={() => this.setState({ hasError: false, error: undefined })}
                 className="btn-secondary w-full"
               >
-                Try Again
+                {t('try_again', 'Try Again')}
               </button>
             </div>
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mt-4 text-left">
                 <summary className="cursor-pointer text-gray-500 text-sm">
-                  Error Details (Development)
+                  {t('error_details', 'Error Details (Development)')}
                 </summary>
                 <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">
                   {this.state.error.stack}
@@ -67,4 +69,4 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-export default ErrorBoundary;
+export default withTranslation()(ErrorBoundary);
