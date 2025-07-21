@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { formatOptionsMap, FormatOption } from '../constants/file';
+import { useTranslation } from 'react-i18next';
 
 interface FormatSelectorProps {
   fileExtension: string | null; // Định dạng file đã upload (vd: 'pdf', 'docx', ...)
@@ -8,6 +9,7 @@ interface FormatSelectorProps {
 }
 
 const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormatChange, disabled }) => {
+  const { t } = useTranslation();
   const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
 
   // Khi fileExtension thay đổi, reset selectedFormat
@@ -30,7 +32,7 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
   if (!fileExtension || options.length === 0) {
     return (
       <div className="mt-4 text-sm text-gray-500 text-center">
-        Vui lòng tải lên file hợp lệ để chọn định dạng chuyển đổi.
+        {t('upload_valid_file_to_select_format', 'Vui lòng tải lên file hợp lệ để chọn định dạng chuyển đổi.')}
       </div>
     );
   }
@@ -38,7 +40,7 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
   return (
     <div className="mt-4 w-full">
       <label htmlFor="format-select" className="block mb-2 text-base font-medium text-gray-700">
-        Chọn định dạng đích
+        {t('select_target_format_label', 'Chọn định dạng đích')}
       </label>
       <select
         id="format-select"
@@ -48,7 +50,7 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
         disabled={disabled}
       >
         <option value="" disabled>
-          -- Chọn định dạng đích --
+          {t('select_target_format_placeholder', '-- Chọn định dạng đích --')}
         </option>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

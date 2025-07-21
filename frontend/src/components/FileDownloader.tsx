@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from '../api/api';
 import Loading from './ui/Loading';
+import { useTranslation } from 'react-i18next';
 
 interface FileDownloaderProps {
   fileId: string;
@@ -8,7 +9,8 @@ interface FileDownloaderProps {
   className?: string;
 }
 
-const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = 'Tải file về', className = '' }) => {
+const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = '', className = '' }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +21,7 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = 'T
       const res = await axios.get(`/file/download/${fileId}`);
       const preSignedUrl = res.data?.preSignedUrl || res.data?.downloadUrl;
       if (!preSignedUrl) {
-        setError('Không nhận được liên kết tải file. Vui lòng thử lại.');
+        setError(t('no_download_link', 'Không nhận được liên kết tải file. Vui lòng thử lại.'));
         setLoading(false);
         return;
       }
@@ -36,14 +38,14 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = 'T
       setLoading(false);
       if (err.response) {
         if (err.response.status === 404) {
-          setError('File không tồn tại hoặc chưa được chuyển đổi.');
+          setError(t('file_not_found', 'File không tồn tại hoặc chưa được chuyển đổi.'));
         } else if (err.response.status === 500) {
-          setError('Lỗi hệ thống khi tải file. Vui lòng thử lại sau.');
+          setError(t('download_server_error', 'Lỗi hệ thống khi tải file. Vui lòng thử lại sau.'));
         } else {
-          setError('Đã xảy ra lỗi khi tải file. Vui lòng thử lại.');
+          setError(t('download_error', 'Đã xảy ra lỗi khi tải file. Vui lòng thử lại.'));
         }
       } else {
-        setError('Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.');
+        setError(t('cannot_connect_server', 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.'));
       }
     }
   };
@@ -55,7 +57,7 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = 'T
         onClick={handleDownload}
         disabled={loading}
       >
-        {loading ? <Loading text="Đang chuẩn bị tải..." size="sm" /> : buttonText}
+        {loading ? <Loading text={t('preparing_download', 'Đang chuẩn bị tải...')} size="sm" /> : (buttonText || t('download_btn', 'Tải file về'))}
       </button>
       {error && (
         <p className="mt-2 text-sm text-red-600 text-center w-full max-w-xs">{error}</p>

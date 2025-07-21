@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface LoadingProps {
   size?: 'sm' | 'md' | 'lg';
@@ -8,9 +9,10 @@ interface LoadingProps {
 
 const Loading: React.FC<LoadingProps> = ({ 
   size = 'md', 
-  text = 'Loading...', 
+  text, 
   className = '' 
 }) => {
+  const { t } = useTranslation();
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-8 h-8',
@@ -23,7 +25,7 @@ const Loading: React.FC<LoadingProps> = ({
         className={`${sizeClasses[size]} border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin`}
       />
       {text && (
-        <p className="text-gray-600 text-sm animate-pulse">{text}</p>
+        <p className="text-gray-600 text-sm animate-pulse">{text || t('loading', 'Loading...')}</p>
       )}
     </div>
   );

@@ -12,6 +12,7 @@ export interface UseFileConvertResult {
   formatError: string;
   handleConvert: (fileId: string, targetFormat: string) => Promise<void>;
   resetConvert: () => void;
+  setConvertStatus: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export function useFileConvert(): UseFileConvertResult {
@@ -23,7 +24,7 @@ export function useFileConvert(): UseFileConvertResult {
 
   const handleConvert = async (fileId: string, targetFormat: string) => {
     if (!fileId || !targetFormat) {
-      setFormatError('Vui lòng chọn định dạng đích trước khi chuyển đổi.');
+      setFormatError(t('select_target_format'));
       return;
     }
     setFormatError('');
@@ -36,19 +37,19 @@ export function useFileConvert(): UseFileConvertResult {
       if (response.data && response.data.jobId) {
         setJobId(response.data.jobId);
         setConvertStatus(response.data.status || 'PROCESSING');
-        toast.success('Yêu cầu chuyển đổi đã được gửi. Đang xử lý...');
+        toast.success(t('convert_request_sent'));
       } else {
-        setFormatError(ERROR_MESSAGES.invalidResponse);
+        setFormatError(t(ERROR_MESSAGES.invalidResponse));
       }
     } catch (error: any) {
-      let msg = ERROR_MESSAGES.convertError;
+      let msg = t(ERROR_MESSAGES.convertError);
       if (error?.response?.data?.error_code) {
         switch (error.response.data.error_code) {
           case 'FILE_NOT_READY':
-            msg = ERROR_MESSAGES.fileNotReady;
+            msg = t(ERROR_MESSAGES.fileNotReady);
             break;
           case 'UNSUPPORTED_FORMAT':
-            msg = ERROR_MESSAGES.unsupportedConvert;
+            msg = t(ERROR_MESSAGES.unsupportedConvert);
             break;
           default:
             msg = error.response.data.message || msg;
@@ -77,5 +78,6 @@ export function useFileConvert(): UseFileConvertResult {
     formatError,
     handleConvert,
     resetConvert,
+    setConvertStatus,
   };
 } 
