@@ -18,7 +18,7 @@ public class MessageSourceConfig {
         ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
 
         // Chuyển sang basename chung để hỗ trợ nhiều ngôn ngữ
-        messageSource.setBasename("classpath:messages_vi"); // Đang dùng ngôn ngữ tiếng Việt làm base, chưa điều hướng message source theo Accept-Language
+        messageSource.setBasename("classpath:messages"); // Đổi sang messages để Spring tự động chọn file theo locale
         messageSource.setDefaultEncoding("UTF-8");
 
         // Không fallback theo hệ điều hành (chỉ dùng file messages_*.properties đúng locale)
