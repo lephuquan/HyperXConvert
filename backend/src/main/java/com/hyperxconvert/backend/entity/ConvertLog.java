@@ -8,10 +8,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
-@Table(name = "convert_queue_logs")
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "convert_queue_logs")
 public class ConvertLog {
     @Id
     @Column(name = "id", nullable = false)
@@ -37,15 +38,4 @@ public class ConvertLog {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    public ConvertLog(UUID id, UUID fileId, String userIp, String status, LocalDateTime endedAt, String errorCode, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
-        this.fileId = fileId;
-        this.userIp = userIp;
-        this.status = status;
-        this.endedAt = endedAt;
-        this.errorCode = errorCode;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 } 
