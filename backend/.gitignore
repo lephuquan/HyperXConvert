@@ -4,6 +4,7 @@ target/
 .idea/
 *.iml
 .env
+.env*
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
