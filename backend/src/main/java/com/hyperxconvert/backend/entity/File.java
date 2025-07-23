@@ -7,38 +7,39 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
-@Table(name = "files")
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "files")
 public class File {
     
     @Id
-    @Column(name = "file_id")
+    @Column(name = "file_id", nullable = false)
     private UUID fileId;
     
-    @Column(name = "user_ip", nullable = false, length = 45)
+    @Column(name = "user_ip")
     private String userIp;
     
-    @Column(name = "original_path", nullable = false, length = 255)
+    @Column(name = "original_path")
     private String originalPath;
     
-    @Column(name = "converted_path", length = 255)
+    @Column(name = "converted_path")
     private String convertedPath;
     
-    @Column(name = "format_from", nullable = false, length = 50)
+    @Column(name = "format_from")
     private String formatFrom;
     
-    @Column(name = "format_to", length = 50)
+    @Column(name = "format_to")
     private String formatTo;
     
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status")
     private String status;
     
-    @Column(name = "expiry_time", nullable = false)
-    private LocalDateTime expiryTime;
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
     
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
@@ -52,7 +53,7 @@ public class File {
         this.formatFrom = formatFrom;
         this.formatTo = formatTo;
         this.status = status;
-        this.expiryTime = expiryTime;
+        this.expiresAt = expiryTime;
         this.createdAt = LocalDateTime.now();
     }
 } 

@@ -46,7 +46,7 @@ public class FileController {
 
     @GetMapping("/download/{fileId}")
     public ResponseEntity<?> getDownloadUrl(@PathVariable String fileId) {
-        final String method = "getDownloadUrl";
+        final String method = "GetDownloadUrl";
         logger.info("[{}] Request to generate pre-signed download URL for fileId: {}", method, fileId);
         return ResponseEntity.ok(fileService.getDownloadUrl(fileId));
     }

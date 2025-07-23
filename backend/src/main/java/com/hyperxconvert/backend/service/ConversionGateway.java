@@ -9,10 +9,19 @@ import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import com.hyperxconvert.backend.enums.FileFormat;
+import com.hyperxconvert.backend.config.ConversionCommandConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
 @Service
 public class ConversionGateway {
+    private final ConversionCommandConfig commandConfig;
+
+    @Autowired
+    public ConversionGateway(ConversionCommandConfig commandConfig) {
+        this.commandConfig = commandConfig;
+    }
+
     public File convert(File inputFile, String fromFormat, String toFormat) throws Exception {
         long start = System.nanoTime();
         try {
@@ -47,11 +56,24 @@ public class ConversionGateway {
 
     private File convertPdfToDocx(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("converted-", ".docx").toFile();
-        ProcessBuilder pb = new ProcessBuilder("pdf2docx", "convert", inputFile.getAbsolutePath(), outputFile.getAbsolutePath());
+        String[] cmd = (commandConfig.getPdf2docxCmd() + " convert " + inputFile.getAbsolutePath() + " " + outputFile.getAbsolutePath()).split(" ");
+        ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
+
+        // Đọc toàn bộ output của lệnh chuyển đổi
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append(System.lineSeparator());
+            }
+        }
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.pdf2docx");
+        if (exitCode != 0) {
+            log.error("pdf2docx failed. Output:\n{}", output.toString());
+            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.pdf2docx");
+        }
         return outputFile;
     }
     private boolean isPdfFile(File file) throws IOException {
@@ -63,7 +85,7 @@ public class ConversionGateway {
     }
     private File convertDocxToPdf(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("converted-", ".pdf").toFile();
-        String officeCmd = getLibreOfficeCmd();
+        String officeCmd = "libreoffice";
         ProcessBuilder pb = new ProcessBuilder(officeCmd, "--headless", "--convert-to", "pdf", "--outdir", outputFile.getParent(), inputFile.getAbsolutePath());
         pb.redirectErrorStream(true);
         Process process = pb.start();
@@ -87,7 +109,8 @@ public class ConversionGateway {
     }
     private File convertJpgToPng(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("converted-", ".png").toFile();
-        ProcessBuilder pb = new ProcessBuilder("sharp", inputFile.getAbsolutePath(), "--output", outputFile.getAbsolutePath());
+        String[] cmd = (commandConfig.getSharpCmd() + " " + inputFile.getAbsolutePath() + " --output " + outputFile.getAbsolutePath()).split(" ");
+        ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
@@ -96,7 +119,8 @@ public class ConversionGateway {
     }
     private File convertPngToJpg(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("converted-", ".jpg").toFile();
-        ProcessBuilder pb = new ProcessBuilder("sharp", inputFile.getAbsolutePath(), "--output", outputFile.getAbsolutePath());
+        String[] cmd = (commandConfig.getSharpCmd() + " " + inputFile.getAbsolutePath() + " --output " + outputFile.getAbsolutePath()).split(" ");
+        ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
@@ -105,7 +129,8 @@ public class ConversionGateway {
     }
     private File convertMp4ToMp3(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("converted-", ".mp3").toFile();
-        ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", inputFile.getAbsolutePath(), "-vn", "-ar", "44100", "-ac", "2", "-b:a", "192k", outputFile.getAbsolutePath());
+        String[] cmd = (commandConfig.getFfmpegCmd() + " -i " + inputFile.getAbsolutePath() + " -vn -ar 44100 -ac 2 -b:a 192k " + outputFile.getAbsolutePath()).split(" ");
+        ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
@@ -114,11 +139,9 @@ public class ConversionGateway {
     }
     private File compressPdf(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("compressed-", ".pdf").toFile();
-        String gsCmd = getCommandForOS(
-            System.getProperty("os.name").toLowerCase().contains("win") ? "gswin64c" : "gs",
-            "gswin64c", "gswin32c", "gs"
-        );
-        ProcessBuilder pb = new ProcessBuilder(gsCmd, "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4", "-dPDFSETTINGS=/ebook", "-dNOPAUSE", "-dQUIET", "-dBATCH", "-sOutputFile=" + outputFile.getAbsolutePath(), inputFile.getAbsolutePath());
+        String gsCmd = commandConfig.getGhostscriptCmd();
+        String[] cmd = (gsCmd + " -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" + outputFile.getAbsolutePath() + " " + inputFile.getAbsolutePath()).split(" ");
+        ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
@@ -127,52 +150,12 @@ public class ConversionGateway {
     }
     private File compressVideo(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("compressed-", ".mp4").toFile();
-        ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", inputFile.getAbsolutePath(), "-vcodec", "libx264", "-crf", "28", outputFile.getAbsolutePath());
+        String[] cmd = (commandConfig.getFfmpegCmd() + " -i " + inputFile.getAbsolutePath() + " -vcodec libx264 -crf 28 " + outputFile.getAbsolutePath()).split(" ");
+        ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
         int exitCode = process.waitFor();
         if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.compressvideo");
         return outputFile;
-    }
-
-    // Tiện ích: chọn tên lệnh phù hợp theo hệ điều hành, ưu tiên soffice.com trên Windows
-    private String getLibreOfficeCmd() {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("win")) {
-            String[] candidates = {
-                "soffice.com",
-                "C:\\Program Files\\LibreOffice\\program\\soffice.com",
-                "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.com",
-                "soffice",
-                "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
-                "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe"
-            };
-            for (String cmd : candidates) {
-                try {
-                    ProcessBuilder pb = new ProcessBuilder(cmd, "--version");
-                    pb.redirectErrorStream(true);
-                    Process process = pb.start();
-                    int exitCode = process.waitFor();
-                    if (exitCode == 0) return cmd;
-                } catch (Exception ignored) {}
-            }
-            return "soffice.com";
-        }
-        return "libreoffice";
-    }
-
-    // Tiện ích: chọn tên lệnh phù hợp theo hệ điều hành
-    private String getCommandForOS(String... candidates) {
-        for (String cmd : candidates) {
-            try {
-                ProcessBuilder pb = new ProcessBuilder(cmd, "--version");
-                pb.redirectErrorStream(true);
-                Process process = pb.start();
-                int exitCode = process.waitFor();
-                if (exitCode == 0) return cmd;
-            } catch (Exception ignored) {}
-        }
-        // Nếu không tìm thấy, trả về candidate đầu tiên (có thể sẽ lỗi, nhưng báo lỗi rõ ràng)
-        return candidates[0];
     }
 } 
