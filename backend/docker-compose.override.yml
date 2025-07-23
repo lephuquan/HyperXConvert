@@ -1,0 +1,43 @@
+# Note:
+# - Run for overriding: docker compose up
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: postgres-local
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: HyperX2025!*
+      POSTGRES_DB: hyperxconvert
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - spring-net
+
+  backend:
+    env_file:
+      - ${SPRING_ENV_ACTIVE}  # env.staging / env.prod
+    build:
+      context: ./
+    container_name: springboot-app
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+    networks:
+      - spring-net
+
+volumes:
+  pgdata:
+
+networks:
+  spring-net:
