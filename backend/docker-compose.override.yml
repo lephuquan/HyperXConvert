@@ -23,11 +23,15 @@ services:
       - ${SPRING_ENV_ACTIVE}  # env.staging / env.prod
     build:
       context: ./
+      dockerfile: Dockerfile.dev # Chỉ định Dockerfile.dev để chạy ứng dụng từ source code trên máy local
+    volumes:
+      - ./:/app # Gắn thư mục máy local vào /app để khi sửa code thì nó sẽ tự động build lại
     container_name: springboot-app
     depends_on:
       - db
     ports:
       - "8080:8080"
+      - "5005:5005"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
