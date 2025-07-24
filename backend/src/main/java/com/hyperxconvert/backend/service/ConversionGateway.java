@@ -109,12 +109,30 @@ public class ConversionGateway {
     }
     private File convertJpgToPng(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("converted-", ".png").toFile();
-        String[] cmd = (commandConfig.getSharpCmd() + " " + inputFile.getAbsolutePath() + " --output " + outputFile.getAbsolutePath()).split(" ");
+        File jpgInput = inputFile;
+        if (!inputFile.getName().toLowerCase().endsWith(".jpg")) {
+            jpgInput = Files.createTempFile("input-", ".jpg").toFile();
+            java.nio.file.Files.copy(inputFile.toPath(), jpgInput.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+        String[] cmd = {commandConfig.getSharpCmd(), "-i", jpgInput.getAbsolutePath(), "-o", outputFile.getAbsolutePath()};
+        log.info("[convertJpgToPng] Running command: {}", String.join(" ", cmd));
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append(System.lineSeparator());
+            }
+        }
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.jpg2png");
+        log.info("[convertJpgToPng] Process exited with code: {}", exitCode);
+        if (exitCode != 0) {
+            log.error("[convertJpgToPng] JPG to PNG conversion failed. Output:\n{}", output.toString());
+            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.jpg2png");
+        }
+        log.info("[convertJpgToPng] Conversion output: {}", output.toString());
         return outputFile;
     }
     private File convertPngToJpg(File inputFile) throws Exception {
