@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import FormatSelector from './FormatSelector';
 import FileStatusTracker from './FileStatusTracker';
 import { ClipLoader } from 'react-spinners';
-import { SUPPORTED_FORMATS } from '../constants/file';
+import { SUPPORTED_FORMATS, MAX_FILE_SIZE } from '../constants/file';
 import { useFileUpload } from '../hooks/useFileUpload';
 import { useFileConvert } from '../hooks/useFileConvert';
 import UploadProgress from './UploadProgress';
@@ -25,6 +25,7 @@ const FileConverter: React.FC = () => {
   const [fileExtension, setFileExtension] = useState<string | null>(null);
   const [targetFormat, setTargetFormat] = useState<string | null>(null);
   const [fileStatus, setFileStatus] = useState<string | null>(null);
+  const [localErrorMessage, setLocalErrorMessage] = useState<string>('');
 
   // Custom hooks
   const {
@@ -55,11 +56,32 @@ const FileConverter: React.FC = () => {
     resetConvert();
   };
 
+  // Validate file (dùng chung cho onDrop và upload)
+  const validateFile = (file: File): boolean => {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (!extension || !SUPPORTED_FORMATS.includes(extension as any)) {
+      const msg = t('unsupported_format', 'Định dạng file không được hỗ trợ.');
+      setLocalErrorMessage(msg);
+      return false;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      const msg = t('file_too_large', 'File quá lớn, tối đa 50MB.');
+      setLocalErrorMessage(msg);
+      return false;
+    }
+    setLocalErrorMessage('');
+    return true;
+  };
+
   // Dropzone
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
       if (file) {
+        if (!validateFile(file)) {
+          resetAll(); // clear các state liên quan nếu có file lỗi
+          return;
+        }
         resetAll();
         setSelectedFile(file);
         setFileExtension(file.name.split('.').pop()?.toLowerCase() || null);
@@ -85,12 +107,14 @@ const FileConverter: React.FC = () => {
     }
   };
 
-  // Gom lỗi upload và lỗi convert để hiển thị qua ErrorMessage
-  const errorToShow = uploadStatus === 'error' && uploadErrorMessage
-    ? uploadErrorMessage
-    : formatError
-      ? formatError
-      : '';
+  // Gom lỗi upload, convert và local để hiển thị qua ErrorMessage
+  const errorToShow = localErrorMessage
+    ? localErrorMessage
+    : uploadStatus === 'error' && uploadErrorMessage
+      ? uploadErrorMessage
+      : formatError
+        ? formatError
+        : '';
 
   return (
     <div className="max-w-md mx-auto p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-md mt-4">
