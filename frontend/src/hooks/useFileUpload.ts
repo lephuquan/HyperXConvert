@@ -25,11 +25,15 @@ export function useFileUpload(): UseFileUploadResult {
   const validateFile = (file: File): boolean => {
     const extension = file.name.split('.').pop()?.toLowerCase();
     if (!extension || !SUPPORTED_FORMATS.includes(extension as any)) {
-      toast.error(t('unsupported_format', ERROR_MESSAGES.unsupportedFormat));
+      const msg = t('unsupported_format', ERROR_MESSAGES.unsupportedFormat);
+      toast.error(msg);
+      setErrorMessage(msg);
       return false;
     }
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(t('file_too_large', ERROR_MESSAGES.fileTooLarge));
+      const msg = t('file_too_large', ERROR_MESSAGES.fileTooLarge);
+      toast.error(msg);
+      setErrorMessage(msg);
       return false;
     }
     return true;
