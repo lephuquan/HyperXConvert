@@ -165,12 +165,25 @@ public class ConversionGateway {
     }
     private File convertMp4ToMp3(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("converted-", ".mp3").toFile();
-        String[] cmd = (commandConfig.getFfmpegCmd() + " -i " + inputFile.getAbsolutePath() + " -vn -ar 44100 -ac 2 -b:a 192k " + outputFile.getAbsolutePath()).split(" ");
+        String[] cmd = (commandConfig.getFfmpegCmd() + " -y -i " + inputFile.getAbsolutePath() + " -vn -ar 44100 -ac 2 -b:a 192k " + outputFile.getAbsolutePath()).split(" ");
+        log.info("[convertMp4ToMp3] Running command: {}", String.join(" ", cmd));
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append(System.lineSeparator());
+            }
+        }
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.mp4tomp3");
+        log.info("[convertMp4ToMp3] Process exited with code: {}", exitCode);
+        if (exitCode != 0) {
+            log.error("[convertMp4ToMp3] MP4 to MP3 conversion failed. Output:\n{}", output.toString());
+            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.mp4tomp3");
+        }
+        log.info("[convertMp4ToMp3] Conversion output: {}", output.toString());
         return outputFile;
     }
     private File compressPdf(File inputFile) throws Exception {
