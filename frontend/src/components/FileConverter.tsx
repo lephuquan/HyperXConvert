@@ -201,7 +201,7 @@ const FileConverter: React.FC = () => {
           )}
         </button>
         {/* Loader trạng thái xác thực file */}
-        {fileId && (
+        {fileId && uploadStatus === 'completed' && (
           <div className="mt-6">
             <FileStatusTracker
               fileId={fileId}
