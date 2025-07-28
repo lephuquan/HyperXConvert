@@ -263,12 +263,45 @@ public class ConversionGateway {
     }
     private File compressVideo(File inputFile) throws Exception {
         File outputFile = Files.createTempFile("compressed-", ".mp4").toFile();
-        String[] cmd = (commandConfig.getFfmpegCmd() + " -i " + inputFile.getAbsolutePath() + " -vcodec libx264 -crf 28 " + outputFile.getAbsolutePath()).split(" ");
+        // Cải thiện command ffmpeg với các tham số tối ưu hóa tốc độ
+        String[] cmd = (commandConfig.getFfmpegCmd() + 
+            " -i " + inputFile.getAbsolutePath() + 
+            " -vcodec libx264 -preset fast -crf 28" +
+            " -acodec aac -b:a 128k" +
+            " -movflags +faststart" +
+            " -y " + outputFile.getAbsolutePath()).split(" ");
+        log.info("[compressVideo] Running command: {}", String.join(" ", cmd));
+        log.info("[compressVideo] Input file size: {} bytes", inputFile.length());
+        
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
-        int exitCode = process.waitFor();
-        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.compressvideo");
+        
+        // Thêm timeout 10 phút cho process
+        boolean finished = process.waitFor(10, java.util.concurrent.TimeUnit.MINUTES);
+        if (!finished) {
+            log.error("[compressVideo] Process timeout after 10 minutes. Destroying process...");
+            process.destroyForcibly();
+            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_TIMEOUT", "error.conversion.timeout");
+        }
+        
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append(System.lineSeparator());
+            }
+        }
+        
+        int exitCode = process.exitValue();
+        log.info("[compressVideo] Process exited with code: {}", exitCode);
+        if (exitCode != 0) {
+            log.error("[compressVideo] Video compression failed. Output:\n{}", output.toString());
+            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.compressvideo");
+        }
+        
+        log.info("[compressVideo] Compression completed successfully. Output: {}", output.toString());
+        log.info("[compressVideo] Output file size: {} bytes", outputFile.length());
         return outputFile;
     }
 } 
