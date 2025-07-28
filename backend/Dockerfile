@@ -4,11 +4,11 @@ FROM openjdk:17-jdk-slim
 # Cài các công cụ hệ thống cần thiết
 # - python3, pip: để chạy pdf2docx (chuyển PDF sang DOCX)
 # - ffmpeg: chuyển đổi/nén video, audio (MP4 ↔ MP3, nén video)
-# - ghostscript: nén file PDF
+# - qpdf: nén file PDF
 # - curl: để cài Node.js
 # - libreoffice: chuyển DOCX sang PDF
 RUN apt-get update && \
-    apt-get install -y python3 python3-pip ffmpeg ghostscript curl libreoffice && \
+    apt-get install -y python3 python3-pip ffmpeg qpdf curl libreoffice && \
     apt-get clean
 
 # Cài pdf2docx (CLI sẽ nằm ở /root/.local/bin)

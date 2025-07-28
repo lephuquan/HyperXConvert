@@ -7,8 +7,8 @@ public enum FileFormat {
     PNG("png", "image/png"),
     MP4("mp4", "video/mp4"),
     MP3("mp3", "audio/mpeg"),
-    COMPRESSED_PDF("compressed_pdf", null),
-    COMPRESSED_VIDEO("compressed_video", null);
+    COMPRESSED_PDF("pdf", "application/pdf"),
+    COMPRESSED_VIDEO("mp4", "video/mp4");
 
     private final String extension;
     private final String contentType;

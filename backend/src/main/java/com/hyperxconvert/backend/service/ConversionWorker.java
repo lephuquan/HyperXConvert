@@ -127,7 +127,9 @@ public class ConversionWorker {
             // 5. Convert file
             convertedFile = fileConversionService.convert(realInputFile, fileEntity.getFormatFrom(), job.getTargetFormat());
             // 6. Upload result file to S3
-            String convertedKey = String.format("converted/%s/%s.%s", fileEntity.getUserIp(), fileEntity.getFileId(), job.getTargetFormat().toLowerCase());
+            FileFormat targetFormat = FileFormat.fromString(job.getTargetFormat());
+            String fileExtension = targetFormat != null ? targetFormat.getExtension() : job.getTargetFormat().toLowerCase();
+            String convertedKey = String.format("converted/%s/%s.%s", fileEntity.getUserIp(), fileEntity.getFileId(), fileExtension);
             s3Service.uploadFileToS3(convertedKey, convertedFile, "application/octet-stream");
             // 7. Update DB: files, convert_queue_logs
             fileEntity.setStatus(FileStatus.SUCCESS.name());
