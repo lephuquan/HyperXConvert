@@ -23,4 +23,4 @@ conversion:
   pdf2docx-cmd: "pdf2docx"
   sharp-cmd: "sharp"
   ffmpeg-cmd: "ffmpeg"
-  ghostscript-cmd: "gs"
+  qpdf-cmd: "qpdf"

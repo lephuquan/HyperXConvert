@@ -1,5 +1,6 @@
 package com.hyperxconvert.backend.service;
 
+import com.hyperxconvert.backend.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.io.File;
@@ -11,6 +12,8 @@ import java.io.InputStreamReader;
 import com.hyperxconvert.backend.enums.FileFormat;
 import com.hyperxconvert.backend.config.ConversionCommandConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -181,20 +184,81 @@ public class ConversionGateway {
         log.info("[convertMp4ToMp3] Process exited with code: {}", exitCode);
         if (exitCode != 0) {
             log.error("[convertMp4ToMp3] MP4 to MP3 conversion failed. Output:\n{}", output.toString());
-            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.mp4tomp3");
+            throw new ApiException("CONVERSION_ERROR", "error.conversion.mp4tomp3");
         }
         log.info("[convertMp4ToMp3] Conversion output: {}", output.toString());
         return outputFile;
     }
     private File compressPdf(File inputFile) throws Exception {
-        File outputFile = Files.createTempFile("compressed-", ".pdf").toFile();
-        String gsCmd = commandConfig.getGhostscriptCmd();
-        String[] cmd = (gsCmd + " -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" + outputFile.getAbsolutePath() + " " + inputFile.getAbsolutePath()).split(" ");
+        // Kiểm tra file đầu vào có phải PDF hợp lệ không
+        if (!isPdfFile(inputFile)) {
+            throw new com.hyperxconvert.backend.exception.ApiException("INVALID_INPUT", "error.input.notpdf");
+        }
+        
+        // Sử dụng qpdf để nén PDF
+        log.info("[compressPdf] Using qpdf for PDF compression");
+        try {
+            return compressPdfWithQpdf(inputFile);
+        } catch (Exception e) {
+            log.error("[compressPdf] qpdf failed: {}", e.getMessage());
+            throw new com.hyperxconvert.backend.exception.ApiException("COMPRESSION_FAILED", "error.compression.qpdf_failed");
+        }
+    }
+    
+    private File compressPdfWithQpdf(File inputFile) throws Exception {
+        File outputFile = Files.createTempFile("compressed-qpdf-", ".pdf").toFile();
+        List<String> cmd = new ArrayList<>();
+        cmd.add(commandConfig.getQpdfCmd());
+        cmd.add("--linearize");
+        cmd.add("--object-streams=generate");
+        cmd.add("--compression-level=9");
+        cmd.add(inputFile.getAbsolutePath());
+        cmd.add(outputFile.getAbsolutePath());
+
+        log.info("[compressPdfWithQpdf] Running command: {}", String.join(" ", cmd));
+        log.info("[compressPdfWithQpdf] Input file size: {} bytes", inputFile.length());
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Process process = pb.start();
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append(System.lineSeparator());
+            }
+        }
         int exitCode = process.waitFor();
-        if (exitCode != 0) throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.compresspdf");
+        
+        log.info("[compressPdfWithQpdf] qpdf exit code: {}", exitCode);
+        log.info("[compressPdfWithQpdf] qpdf output:\n{}", output.toString());
+        
+        // qpdf có thể thành công với warnings (exit code 3) hoặc thành công hoàn toàn (exit code 0)
+        if (exitCode != 0 && exitCode != 3) {
+            log.error("[compressPdfWithQpdf] qpdf failed with exit code {}. Output:\n{}", exitCode, output.toString());
+            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.qpdf");
+        }
+        
+        // Log warnings nếu có
+        if (output.toString().contains("WARNING") || output.toString().contains("warning")) {
+            log.warn("[compressPdfWithQpdf] qpdf completed with warnings:\n{}", output.toString());
+        }
+        
+        // Kiểm tra file đầu ra có tồn tại không
+        if (!outputFile.exists()) {
+            log.error("[compressPdfWithQpdf] Output file does not exist: {}", outputFile.getAbsolutePath());
+            throw new com.hyperxconvert.backend.exception.ApiException("OUTPUT_INVALID", "error.output.file_not_created");
+        }
+        
+        log.info("[compressPdfWithQpdf] Output file exists, size: {} bytes", outputFile.length());
+        
+        // Kiểm tra file đầu ra có phải PDF hợp lệ không
+        if (!isPdfFile(outputFile)) {
+            log.error("[compressPdfWithQpdf] Output file is not a valid PDF. Output:\n{}", output.toString());
+            throw new com.hyperxconvert.backend.exception.ApiException("OUTPUT_INVALID", "error.output.notpdf");
+        }
+        
+        log.info("[compressPdfWithQpdf] Compression completed successfully. Output: {}", output.toString());
+        log.info("[compressPdfWithQpdf] Output file size: {} bytes", outputFile.length());
         return outputFile;
     }
     private File compressVideo(File inputFile) throws Exception {
