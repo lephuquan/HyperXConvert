@@ -31,7 +31,7 @@ public class ConversionGateway {
             FileFormat from = FileFormat.fromString(fromFormat);
             FileFormat to = FileFormat.fromString(toFormat);
             if (from == null || to == null) {
-                throw new com.hyperxconvert.backend.exception.ApiException("UNSUPPORTED_FORMAT", "error.unsupported.format");
+                throw new ApiException("UNSUPPORTED_FORMAT", "error.unsupported.format");
             }
             // Tùy theo from/to gọi các hàm chuyển đổi tương ứng
             if (from == FileFormat.PDF && to == FileFormat.DOCX) {
@@ -49,7 +49,7 @@ public class ConversionGateway {
             } else if (from == FileFormat.MP4 && to == FileFormat.COMPRESSED_VIDEO) {
                 return compressVideo(inputFile);
             } else {
-                throw new com.hyperxconvert.backend.exception.ApiException("UNSUPPORTED_FORMAT", "error.unsupported.conversion");
+                throw new ApiException("UNSUPPORTED_FORMAT", "error.unsupported.conversion");
             }
         } finally {
             long durationMs = (System.nanoTime() - start) / 1_000_000;
@@ -75,7 +75,7 @@ public class ConversionGateway {
         int exitCode = process.waitFor();
         if (exitCode != 0) {
             log.error("pdf2docx failed. Output:\n{}", output.toString());
-            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.pdf2docx");
+            throw new ApiException("CONVERSION_ERROR", "error.conversion.pdf2docx");
         }
         return outputFile;
     }
@@ -106,7 +106,7 @@ public class ConversionGateway {
         File result = new File(outputFile.getParent(), pdfName);
 
         if (exitCode != 0 || !result.exists() || !isPdfFile(result)) {
-            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.docx2pdf");
+            throw new ApiException("CONVERSION_ERROR", "error.conversion.docx2pdf");
         }
         return result;
     }
@@ -133,7 +133,7 @@ public class ConversionGateway {
         log.info("[convertJpgToPng] Process exited with code: {}", exitCode);
         if (exitCode != 0) {
             log.error("[convertJpgToPng] JPG to PNG conversion failed. Output:\n{}", output.toString());
-            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.jpg2png");
+            throw new ApiException("CONVERSION_ERROR", "error.conversion.jpg2png");
         }
         log.info("[convertJpgToPng] Conversion output: {}", output.toString());
         return outputFile;
@@ -161,7 +161,7 @@ public class ConversionGateway {
         log.info("[convertPngToJpg] Process exited with code: {}", exitCode);
         if (exitCode != 0) {
             log.error("[convertPngToJpg] PNG to JPG conversion failed. Output:\n{}", output.toString());
-            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.png2jpg");
+            throw new ApiException("CONVERSION_ERROR", "error.conversion.png2jpg");
         }
         log.info("[convertPngToJpg] Conversion output: {}", output.toString());
         return outputFile;
@@ -192,7 +192,7 @@ public class ConversionGateway {
     private File compressPdf(File inputFile) throws Exception {
         // Kiểm tra file đầu vào có phải PDF hợp lệ không
         if (!isPdfFile(inputFile)) {
-            throw new com.hyperxconvert.backend.exception.ApiException("INVALID_INPUT", "error.input.notpdf");
+            throw new ApiException("INVALID_INPUT", "error.input.notpdf");
         }
         
         // Sử dụng qpdf để nén PDF
@@ -201,7 +201,7 @@ public class ConversionGateway {
             return compressPdfWithQpdf(inputFile);
         } catch (Exception e) {
             log.error("[compressPdf] qpdf failed: {}", e.getMessage());
-            throw new com.hyperxconvert.backend.exception.ApiException("COMPRESSION_FAILED", "error.compression.qpdf_failed");
+            throw new ApiException("COMPRESSION_FAILED", "error.compression.qpdf_failed");
         }
     }
     
@@ -235,7 +235,7 @@ public class ConversionGateway {
         // qpdf có thể thành công với warnings (exit code 3) hoặc thành công hoàn toàn (exit code 0)
         if (exitCode != 0 && exitCode != 3) {
             log.error("[compressPdfWithQpdf] qpdf failed with exit code {}. Output:\n{}", exitCode, output.toString());
-            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.qpdf");
+            throw new ApiException("CONVERSION_ERROR", "error.conversion.qpdf");
         }
         
         // Log warnings nếu có
@@ -246,7 +246,7 @@ public class ConversionGateway {
         // Kiểm tra file đầu ra có tồn tại không
         if (!outputFile.exists()) {
             log.error("[compressPdfWithQpdf] Output file does not exist: {}", outputFile.getAbsolutePath());
-            throw new com.hyperxconvert.backend.exception.ApiException("OUTPUT_INVALID", "error.output.file_not_created");
+            throw new ApiException("OUTPUT_INVALID", "error.output.file_not_created");
         }
         
         log.info("[compressPdfWithQpdf] Output file exists, size: {} bytes", outputFile.length());
@@ -254,7 +254,7 @@ public class ConversionGateway {
         // Kiểm tra file đầu ra có phải PDF hợp lệ không
         if (!isPdfFile(outputFile)) {
             log.error("[compressPdfWithQpdf] Output file is not a valid PDF. Output:\n{}", output.toString());
-            throw new com.hyperxconvert.backend.exception.ApiException("OUTPUT_INVALID", "error.output.notpdf");
+            throw new ApiException("OUTPUT_INVALID", "error.output.notpdf");
         }
         
         log.info("[compressPdfWithQpdf] Compression completed successfully. Output: {}", output.toString());
@@ -282,7 +282,7 @@ public class ConversionGateway {
         if (!finished) {
             log.error("[compressVideo] Process timeout after 10 minutes. Destroying process...");
             process.destroyForcibly();
-            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_TIMEOUT", "error.conversion.timeout");
+            throw new ApiException("CONVERSION_TIMEOUT", "error.conversion.timeout");
         }
         
         StringBuilder output = new StringBuilder();
@@ -297,7 +297,7 @@ public class ConversionGateway {
         log.info("[compressVideo] Process exited with code: {}", exitCode);
         if (exitCode != 0) {
             log.error("[compressVideo] Video compression failed. Output:\n{}", output.toString());
-            throw new com.hyperxconvert.backend.exception.ApiException("CONVERSION_ERROR", "error.conversion.compressvideo");
+            throw new ApiException("CONVERSION_ERROR", "error.conversion.compressvideo");
         }
         
         log.info("[compressVideo] Compression completed successfully. Output: {}", output.toString());
