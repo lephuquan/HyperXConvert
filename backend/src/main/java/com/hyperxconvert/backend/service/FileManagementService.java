@@ -38,6 +38,7 @@ public class FileManagementService {
     private final ConvertLogRepository convertLogRepository;
     private final S3Service s3Service;
     private final int maxDailyUploads;
+    private final Duration presignedUrlExpiry;
     private final MessageSource messageSource;
 
     @Autowired
@@ -47,13 +48,15 @@ public class FileManagementService {
     private String convertQueueUrl;
 
 
-    public FileManagementService(FileRepository fileRepository, ConvertLogRepository convertLogRepository, S3Service s3Service,
-                                 @Value("${app.upload.max-daily-uploads:5}") int maxDailyUploads,
-                                 MessageSource messageSource) {
+        public FileManagementService(FileRepository fileRepository, ConvertLogRepository convertLogRepository, S3Service s3Service,
+                                @Value("${app.upload.max-daily-uploads:5}") int maxDailyUploads,
+                                @Value("${app.upload.presigned-url-expiry:PT24H}") String presignedUrlExpiry,
+                                MessageSource messageSource) {
         this.fileRepository = fileRepository;
         this.convertLogRepository = convertLogRepository;
         this.s3Service = s3Service;
         this.maxDailyUploads = maxDailyUploads;
+        this.presignedUrlExpiry = Duration.parse(presignedUrlExpiry);
         this.messageSource = messageSource;
     }
 
@@ -68,9 +71,9 @@ public class FileManagementService {
             validateExtensionAndContentType(extension, request.getContentType());
             UUID fileId = UUID.randomUUID();
             String s3Key = String.format("uploads/%s/%s.%s", ipAddress, fileId, extension);
-            String presignedUrl = s3Service.generatePresignedUploadUrl(s3Key, request.getContentType(), Duration.ofHours(24));
+            String presignedUrl = s3Service.generatePresignedUploadUrl(s3Key, request.getContentType(), presignedUrlExpiry);
             LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-            LocalDateTime expiresAt = now.plusHours(24);
+            LocalDateTime expiresAt = now.plus(presignedUrlExpiry);
             saveFileAndLog(fileId, ipAddress, s3Key, extension, now, expiresAt, FilenameUtils.sanitizeFilename(request.getFileName()));
             return new UploadUrlResponse(fileId.toString(), presignedUrl, "URL_GENERATED", expiresAt.toString());
         } finally {
@@ -193,7 +196,7 @@ public class FileManagementService {
                 String extension = targetFormat != null ? targetFormat.getExtension() : file.getFormatTo().toLowerCase();
                 String downloadFilename = FilenameUtils.getFilenameWithExtension(originalFilename, extension);
                 
-                String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), downloadFilename, Duration.ofHours(24));
+                String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), downloadFilename, presignedUrlExpiry);
                 result.put("downloadUrl", presignedUrl);
             }
             return result;
@@ -222,7 +225,7 @@ public class FileManagementService {
             String extension = targetFormat != null ? targetFormat.getExtension() : file.getFormatTo().toLowerCase();
             String downloadFilename = FilenameUtils.getFilenameWithExtension(originalFilename, extension);
             
-            String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), downloadFilename, Duration.ofHours(24));
+            String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), downloadFilename, presignedUrlExpiry);
             Map<String, Object> result = new HashMap<>();
             result.put("preSignedUrl", presignedUrl);
             return result;

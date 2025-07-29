@@ -22,3 +22,4 @@ aws:
 app:
   upload:
     max-daily-uploads: 1000
+    presigned-url-expiry: PT24H  # 24 hours
