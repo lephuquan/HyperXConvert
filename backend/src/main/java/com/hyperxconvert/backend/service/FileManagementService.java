@@ -182,7 +182,7 @@ public class FileManagementService {
     public Map<String, Object> getFileStatus(String fileId) {
         try {
             UUID uuid = UUID.fromString(fileId);
-            File file = fileRepository.findById(uuid).orElseThrow(() -> new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_FOUND", "error.file.not.found"));
+            File file = fileRepository.findById(uuid).orElseThrow(() -> new ApiException("FILE_NOT_FOUND", "error.file.not.found"));
             Map<String, Object> result = new HashMap<>();
             result.put("status", file.getStatus());
             if (FileStatus.SUCCESS.name().equalsIgnoreCase(file.getStatus()) && file.getConvertedPath() != null) {
@@ -190,7 +190,7 @@ public class FileManagementService {
                 result.put("downloadUrl", presignedUrl);
             }
             return result;
-        } catch (com.hyperxconvert.backend.exception.ApiException e) {
+        } catch (ApiException e) {
             logger.error("[FileService] File not found: {}", fileId);
             throw e;
         } catch (Exception e) {
@@ -202,16 +202,16 @@ public class FileManagementService {
     public Map<String, Object> getDownloadUrl(String fileId) {
         try {
             UUID uuid = UUID.fromString(fileId);
-            File file = fileRepository.findById(uuid).orElseThrow(() -> new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted"));
+            File file = fileRepository.findById(uuid).orElseThrow(() -> new ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted"));
             if (!FileStatus.SUCCESS.name().equalsIgnoreCase(file.getStatus()) || file.getConvertedPath() == null) {
                 logger.error("[FileService] FileId {} has not been successfully converted or convertedPath is missing", fileId);
-                throw new com.hyperxconvert.backend.exception.ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted");
+                throw new ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted");
             }
             String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), Duration.ofHours(24));
             Map<String, Object> result = new HashMap<>();
             result.put("preSignedUrl", presignedUrl);
             return result;
-        } catch (com.hyperxconvert.backend.exception.ApiException e) {
+        } catch (ApiException e) {
             logger.error("[FileService] File does not exist or has not been successfully converted: {}", fileId);
             throw e;
         } catch (Exception e) {
