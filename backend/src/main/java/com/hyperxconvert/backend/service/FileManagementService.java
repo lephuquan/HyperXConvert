@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import com.hyperxconvert.backend.constant.FileFormatConstants;
 import com.hyperxconvert.backend.enums.FileFormat;
+import com.hyperxconvert.backend.util.FilenameUtils;
 
 @Service
 public class FileManagementService {
@@ -70,7 +71,7 @@ public class FileManagementService {
             String presignedUrl = s3Service.generatePresignedUploadUrl(s3Key, request.getContentType(), Duration.ofHours(24));
             LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
             LocalDateTime expiresAt = now.plusHours(24);
-            saveFileAndLog(fileId, ipAddress, s3Key, extension, now, expiresAt);
+            saveFileAndLog(fileId, ipAddress, s3Key, extension, now, expiresAt, FilenameUtils.sanitizeFilename(request.getFileName()));
             return new UploadUrlResponse(fileId.toString(), presignedUrl, "URL_GENERATED", expiresAt.toString());
         } finally {
             long durationMs = (System.nanoTime() - startTime) / 1_000_000;
@@ -78,8 +79,8 @@ public class FileManagementService {
         }
     }
 
-    private void saveFileAndLog(UUID fileId, String ipAddress, String s3Key, String extension, LocalDateTime now, LocalDateTime expiresAt) {
-        File file = new File(fileId, ipAddress, s3Key, extension.toUpperCase(), null, FileStatus.UPLOADED.name(), expiresAt);
+    private void saveFileAndLog(UUID fileId, String ipAddress, String s3Key, String extension, LocalDateTime now, LocalDateTime expiresAt, String originalFilename) {
+        File file = new File(fileId, ipAddress, s3Key, extension.toUpperCase(), null, FileStatus.UPLOADED.name(), expiresAt, originalFilename);
         file.setCreatedAt(now);
         file.setUpdatedAt(now);
         fileRepository.save(file);
@@ -186,7 +187,13 @@ public class FileManagementService {
             Map<String, Object> result = new HashMap<>();
             result.put("status", file.getStatus());
             if (FileStatus.SUCCESS.name().equalsIgnoreCase(file.getStatus()) && file.getConvertedPath() != null) {
-                String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), Duration.ofHours(24));
+                // Generate filename for download with original name + converted extension
+                String originalFilename = file.getOriginalFilename();
+                FileFormat targetFormat = FileFormat.fromString(file.getFormatTo());
+                String extension = targetFormat != null ? targetFormat.getExtension() : file.getFormatTo().toLowerCase();
+                String downloadFilename = FilenameUtils.getFilenameWithExtension(originalFilename, extension);
+                
+                String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), downloadFilename, Duration.ofHours(24));
                 result.put("downloadUrl", presignedUrl);
             }
             return result;
@@ -207,7 +214,14 @@ public class FileManagementService {
                 logger.error("[FileService] FileId {} has not been successfully converted or convertedPath is missing", fileId);
                 throw new ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted");
             }
-            String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), Duration.ofHours(24));
+            
+            // Generate filename for download with original name + converted extension
+            String originalFilename = file.getOriginalFilename();
+            FileFormat targetFormat = FileFormat.fromString(file.getFormatTo());
+            String extension = targetFormat != null ? targetFormat.getExtension() : file.getFormatTo().toLowerCase();
+            String downloadFilename = FilenameUtils.getFilenameWithExtension(originalFilename, extension);
+            
+            String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), downloadFilename, Duration.ofHours(24));
             Map<String, Object> result = new HashMap<>();
             result.put("preSignedUrl", presignedUrl);
             return result;

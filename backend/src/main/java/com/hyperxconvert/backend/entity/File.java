@@ -45,6 +45,9 @@ public class File {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    @Column(name = "original_filename")
+    private String originalFilename;
+    
     // Constructor with required fields for creating new files
     public File(UUID fileId, String userIp, String originalPath, String formatFrom, String formatTo, String status, LocalDateTime expiryTime) {
         this.fileId = fileId;
@@ -54,6 +57,19 @@ public class File {
         this.formatTo = formatTo;
         this.status = status;
         this.expiresAt = expiryTime;
+        this.createdAt = LocalDateTime.now();
+    }
+    
+    // Constructor with original filename
+    public File(UUID fileId, String userIp, String originalPath, String formatFrom, String formatTo, String status, LocalDateTime expiryTime, String originalFilename) {
+        this.fileId = fileId;
+        this.userIp = userIp;
+        this.originalPath = originalPath;
+        this.formatFrom = formatFrom;
+        this.formatTo = formatTo;
+        this.status = status;
+        this.expiresAt = expiryTime;
+        this.originalFilename = originalFilename;
         this.createdAt = LocalDateTime.now();
     }
 } 

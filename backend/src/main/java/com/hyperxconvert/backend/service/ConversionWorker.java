@@ -26,6 +26,7 @@ import com.hyperxconvert.backend.constant.FileFormatConstants;
 import com.hyperxconvert.backend.enums.FileFormat;
 import org.springframework.context.MessageSource;
 import java.util.Locale;
+import com.hyperxconvert.backend.util.FilenameUtils;
 
 @Slf4j
 @Service
@@ -126,14 +127,20 @@ public class ConversionWorker {
             // 4. Virus scan (skipped)
             // 5. Convert file
             convertedFile = fileConversionService.convert(realInputFile, fileEntity.getFormatFrom(), job.getTargetFormat());
-            // 6. Upload result file to S3
+            // 6. Upload result file to S3 with original filename
             FileFormat targetFormat = FileFormat.fromString(job.getTargetFormat());
             String fileExtension = targetFormat != null ? targetFormat.getExtension() : job.getTargetFormat().toLowerCase();
-            String convertedKey = String.format("converted/%s/%s.%s", fileEntity.getUserIp(), fileEntity.getFileId(), fileExtension);
+            
+            // Generate filename with original name + converted extension
+            String originalFilename = fileEntity.getOriginalFilename();
+            String convertedFilename = FilenameUtils.getFilenameWithExtension(originalFilename, fileExtension);
+            
+            String convertedKey = String.format("converted/%s/%s", fileEntity.getUserIp(), convertedFilename);
             s3Service.uploadFileToS3(convertedKey, convertedFile, "application/octet-stream");
             // 7. Update DB: files, convert_queue_logs
             fileEntity.setStatus(FileStatus.SUCCESS.name());
             fileEntity.setConvertedPath(convertedKey);
+            fileEntity.setFormatTo(job.getTargetFormat());
             fileRepository.save(fileEntity);
             ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), FileStatus.SUCCESS.name(), now, null, now, now);
             convertLogRepository.save(logEntry);
