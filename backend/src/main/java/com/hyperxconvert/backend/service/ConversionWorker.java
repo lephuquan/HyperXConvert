@@ -152,7 +152,8 @@ public class ConversionWorker {
             errorCode = e.getMessage();
             String errorMsg = errorCode;
             try {
-                errorMsg = messageSource.getMessage(errorCode, null, errorCode, Locale.getDefault());
+                // Use English as default for background processing
+                errorMsg = messageSource.getMessage(errorCode, null, errorCode, new Locale("en"));
             } catch (Exception ex) {
                 // fallback to errorCode
             }

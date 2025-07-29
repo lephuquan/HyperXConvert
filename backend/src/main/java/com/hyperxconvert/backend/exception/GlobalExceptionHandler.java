@@ -8,32 +8,40 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.LocaleResolver;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     @Autowired
     private MessageSource messageSource;
+    
+    @Autowired
+    private LocaleResolver localeResolver;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        Locale locale = localeResolver.resolveLocale(request);
         String message = ex.getBindingResult().getFieldError() != null ?
-                ex.getBindingResult().getFieldError().getDefaultMessage() : messageSource.getMessage("error.validation", null, Locale.getDefault());
+                ex.getBindingResult().getFieldError().getDefaultMessage() : messageSource.getMessage("error.validation", null, locale);
         ErrorResponse errorResponse = new ErrorResponse("VALIDATION_ERROR", message, "ERROR");
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<ErrorResponse> handleApiException(ApiException ex) {
+    public ResponseEntity<ErrorResponse> handleApiException(ApiException ex, HttpServletRequest request) {
+        Locale locale = localeResolver.resolveLocale(request);
         String message = ex.getMessageKey() != null ?
-                messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), Locale.getDefault()) : ex.getMessage();
+                messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale) : ex.getMessage();
         ErrorResponse errorResponse = new ErrorResponse(ex.getErrorCode(), message, "ERROR");
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleOtherExceptions(Exception ex) {
-        String message = messageSource.getMessage("error.internal", null, Locale.getDefault());
+    public ResponseEntity<ErrorResponse> handleOtherExceptions(Exception ex, HttpServletRequest request) {
+        Locale locale = localeResolver.resolveLocale(request);
+        String message = messageSource.getMessage("error.internal", null, locale);
         ErrorResponse errorResponse = new ErrorResponse("INTERNAL_SERVER_ERROR", message, "ERROR");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
