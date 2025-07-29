@@ -66,12 +66,13 @@ public class S3Service {
     }
 
     /**
-     * Sinh presigned URL để tải file từ S3 (download)
+     * Sinh presigned URL để tải file từ S3 với filename tùy chỉnh
      */
-    public String generatePresignedDownloadUrl(String s3Key, Duration expiry) {
+    public String generatePresignedDownloadUrl(String s3Key, String filename, Duration expiry) {
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                 .signatureDuration(expiry)
-                .getObjectRequest(b -> b.bucket(bucketName).key(s3Key))
+                .getObjectRequest(b -> b.bucket(bucketName).key(s3Key)
+                        .responseContentDisposition("attachment; filename=\"" + filename + "\""))
                 .build();
         return s3Presigner.presignGetObject(presignRequest).url().toString();
     }
