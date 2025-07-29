@@ -92,12 +92,14 @@ public class ConversionWorker {
         File convertedFile = null;
         String errorCode = null;
         int receiveCount = 1;
+        ConvertQueueMessage job = null;
         try {
             if (msg.attributes().containsKey("ApproximateReceiveCount")) {
                 receiveCount = Integer.parseInt(msg.attributes().get("ApproximateReceiveCount"));
             }
-            ConvertQueueMessage job = objectMapper.readValue(msg.body(), ConvertQueueMessage.class);
-            log.info("[ConversionWorker] Received conversion job: {} (attempt: {})", job, receiveCount);
+            job = objectMapper.readValue(msg.body(), ConvertQueueMessage.class);
+            log.info("Processing conversion job - fileId: {}, targetFormat: {}, attempt: {}", 
+                job.getFileId(), job.getTargetFormat(), receiveCount);
             // 1. Get file entity from DB
             Optional<com.hyperxconvert.backend.entity.File> fileOpt = fileRepository.findById(UUID.fromString(job.getFileId()));
             if (fileOpt.isEmpty()) throw new Exception("error.file.not.found");
@@ -154,7 +156,8 @@ public class ConversionWorker {
             } catch (Exception ex) {
                 // fallback to errorCode
             }
-            log.error("[ConversionWorker] Error processing message: {}", errorMsg, e);
+            log.error("Conversion job failed - fileId: {}, error: {}", 
+                job != null ? job.getFileId() : "unknown", errorMsg, e);
             // Retry if not exceeded max attempts
             if (msg.attributes().containsKey("ApproximateReceiveCount")) {
                 receiveCount = Integer.parseInt(msg.attributes().get("ApproximateReceiveCount"));
@@ -166,11 +169,13 @@ public class ConversionWorker {
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
-                log.warn("[ConversionWorker] Will retry job after {} seconds (attempt: {})", backoff, receiveCount + 1);
+                log.warn("Will retry conversion job after {} seconds - fileId: {}, attempt: {}", 
+                    backoff, job != null ? job.getFileId() : "unknown", receiveCount + 1);
                 // Do not delete message, SQS will retry
             } else {
                 // Send to DLQ (or let SQS handle if RedrivePolicy is set)
-                log.error("[ConversionWorker] Exceeded max retry attempts, sending to DLQ or letting SQS handle.");
+                log.error("Exceeded max retry attempts for conversion job - fileId: {}, sending to DLQ", 
+                    job != null ? job.getFileId() : "unknown");
                 // Delete message from main queue to avoid infinite loop
                 sqsClient.deleteMessage(DeleteMessageRequest.builder().queueUrl(convertQueueUrl).receiptHandle(msg.receiptHandle()).build());
             }
@@ -187,7 +192,8 @@ public class ConversionWorker {
             if (inputFile != null && inputFile.exists()) inputFile.delete();
             if (convertedFile != null && convertedFile.exists()) convertedFile.delete();
             long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            log.info("[MONITOR] QUEUED AND CONVERTED in .......... {}s", String.format("%.1f", durationMs / 1000.0));
+            log.info("Conversion job completed - fileId: {}, duration: {:.1f}s", 
+                job != null ? job.getFileId() : "unknown", durationMs / 1000.0);
         }
     }
 

@@ -76,7 +76,7 @@ public class ValidationWorker {
                 executor.submit(() -> processMessage(message)); // Xử lý song song
             }
         } catch (Exception e) {
-            log.error("[FileValidationWorker] Error polling SQS: {}", e.getMessage(), e);
+            log.error("Error polling upload queue", e);
         }
     }
 
@@ -98,12 +98,14 @@ public class ValidationWorker {
             updateFileStatus(uploadMessage.getFileId(), FileStatus.QUEUED_AND_VALIDATED.name());
             logConvertQueue(uploadMessage, FileStatus.QUEUED_AND_VALIDATED.name(), null, now, LocalDateTime.now());
         } catch (Exception e) {
-            log.error("[FileValidationWorker] Error processing message: {}", e.getMessage(), e);
+            log.error("Error processing validation message - fileId: {}", 
+                uploadMessage != null ? uploadMessage.getFileId() : "unknown", e);
             handleValidationFailure(uploadMessage, "PROCESSING_ERROR", now);
         } finally {
             long durationMs = (System.nanoTime() - start) / 1_000_000;
-           deleteSqsMessage(message);
-            log.info("[MONITOR] QUEUED AND VALIDATED in .......... {}s", String.format("%.1f", durationMs / 1000.0));
+            deleteSqsMessage(message);
+            log.info("File validation completed - fileId: {}, duration: {:.1f}s", 
+                uploadMessage != null ? uploadMessage.getFileId() : "unknown", durationMs / 1000.0);
         }
     }
 
@@ -127,7 +129,7 @@ public class ValidationWorker {
                                 UUID fileId = UUID.fromString(fileIdStr);
                                 return new UploadMessage(fileId, userIdOrIp, filePath);
                             } catch (IllegalArgumentException e) {
-                                log.error("Invalid fileId format in path: {}", fileIdStr);
+                                log.warn("Invalid fileId format in S3 path: {}", fileIdStr);
                             }
                         }
                     }
@@ -138,9 +140,9 @@ public class ValidationWorker {
             try {
                 return objectMapper.readValue(body, UploadMessage.class);
             } catch (Exception uploadMessageException) {
-                log.error("Failed to parse message as both S3EventMessage and UploadMessage. Message body: {}", body);
-                log.error("S3EventMessage parse error: {}", e.getMessage());
-                log.error("UploadMessage parse error: {}", uploadMessageException.getMessage());
+                log.warn("Failed to parse message as both S3EventMessage and UploadMessage - body: {}", body);
+                log.debug("S3EventMessage parse error: {}", e.getMessage());
+                log.debug("UploadMessage parse error: {}", uploadMessageException.getMessage());
             }
         }
         return null;
@@ -148,15 +150,15 @@ public class ValidationWorker {
 
     private boolean validateUploadMessage(UploadMessage msg) {
         if (msg.getFilePath() == null || msg.getFilePath().isEmpty()) {
-            log.error("filePath is null or empty");
+            log.warn("Invalid upload message - filePath is null or empty");
             return false;
         }
         if (msg.getFileId() == null) {
-            log.error("fileId is null");
+            log.warn("Invalid upload message - fileId is null");
             return false;
         }
         if (msg.getUserIdOrIp() == null || msg.getUserIdOrIp().isEmpty()) {
-            log.error("userIdOrIp is null or empty");
+            log.warn("Invalid upload message - userIdOrIp is null or empty");
             return false;
         }
         return true;
@@ -164,7 +166,7 @@ public class ValidationWorker {
 
     private boolean validateS3Bucket() {
         if (s3Bucket == null || s3Bucket.isEmpty()) {
-            log.error("S3 bucket is not configured");
+            log.error("S3 bucket configuration is missing");
             return false;
         }
         return true;
@@ -238,7 +240,7 @@ public class ValidationWorker {
                 .receiptHandle(message.receiptHandle())
                 .build());
         } catch (Exception e) {
-            log.error("Failed to delete message from SQS: {}", e.getMessage(), e);
+            log.warn("Failed to delete message from SQS", e);
         }
     }
 } 
