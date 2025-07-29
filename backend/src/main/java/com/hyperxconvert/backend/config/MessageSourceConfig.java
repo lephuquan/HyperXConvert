@@ -17,12 +17,15 @@ public class MessageSourceConfig {
     public MessageSource messageSource() {
         ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
 
-        // Chuyển sang basename chung để hỗ trợ nhiều ngôn ngữ
-        messageSource.setBasename("classpath:messages"); // Đổi sang messages để Spring tự động chọn file theo locale
+        // Set basename để Spring tự động chọn file theo locale
+        messageSource.setBasename("classpath:messages");
         messageSource.setDefaultEncoding("UTF-8");
 
-        // Không fallback theo hệ điều hành (chỉ dùng file messages_*.properties đúng locale)
-        messageSource.setFallbackToSystemLocale(false);
+        // Cho phép fallback để tránh NoSuchMessageException
+        messageSource.setFallbackToSystemLocale(true);
+        
+        // Set cache duration để reload messages khi cần
+        messageSource.setCacheSeconds(3600);
 
         return messageSource;
     }
@@ -31,7 +34,7 @@ public class MessageSourceConfig {
     public LocaleResolver localeResolver() {
         // Tự động lấy locale từ header "Accept-Language" của request
         AcceptHeaderLocaleResolver resolver = new AcceptHeaderLocaleResolver();
-        resolver.setDefaultLocale(new Locale("vi")); // Ngôn ngữ mặc định là tiếng Việt
+        resolver.setDefaultLocale(new Locale("en")); // Default language is English
         return resolver;
     }
 }
