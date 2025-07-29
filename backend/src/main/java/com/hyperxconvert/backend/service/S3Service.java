@@ -16,7 +16,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.net.URI;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class S3Service {
     private final S3Client s3Client;
@@ -37,6 +39,7 @@ public class S3Service {
      * Tải file từ S3 về local file tạm
      */
     public File downloadFileFromS3(String s3Key) throws Exception {
+        log.debug("Downloading file from S3 - key: {}", s3Key);
         File tempFile = Files.createTempFile("download-", "-s3").toFile();
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
@@ -50,6 +53,7 @@ public class S3Service {
                 fos.write(read_buf, 0, read_len);
             }
         }
+        log.debug("File downloaded successfully - key: {}, size: {} bytes", s3Key, tempFile.length());
         return tempFile;
     }
 
@@ -57,12 +61,14 @@ public class S3Service {
      * Upload file từ local lên S3
      */
     public void uploadFileToS3(String s3Key, File file, String contentType) throws Exception {
+        log.debug("Uploading file to S3 - key: {}, size: {} bytes, contentType: {}", s3Key, file.length(), contentType);
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(s3Key)
                 .contentType(contentType)
                 .build();
         s3Client.putObject(putObjectRequest, file.toPath());
+        log.debug("File uploaded successfully - key: {}", s3Key);
     }
 
     /**

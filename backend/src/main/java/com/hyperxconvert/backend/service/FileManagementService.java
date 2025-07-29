@@ -13,8 +13,7 @@ import com.hyperxconvert.backend.repository.ConvertLogRepository;
 import com.hyperxconvert.backend.repository.FileRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -32,6 +31,7 @@ import com.hyperxconvert.backend.constant.FileFormatConstants;
 import com.hyperxconvert.backend.enums.FileFormat;
 import com.hyperxconvert.backend.util.FilenameUtils;
 
+@Slf4j
 @Service
 public class FileManagementService {
     private final FileRepository fileRepository;
@@ -45,7 +45,7 @@ public class FileManagementService {
 
     @Value("${aws.sqs.convert-queue}")
     private String convertQueueUrl;
-    private static final Logger logger = LoggerFactory.getLogger(FileManagementService.class);
+
 
     public FileManagementService(FileRepository fileRepository, ConvertLogRepository convertLogRepository, S3Service s3Service,
                                  @Value("${app.upload.max-daily-uploads:5}") int maxDailyUploads,
@@ -75,7 +75,7 @@ public class FileManagementService {
             return new UploadUrlResponse(fileId.toString(), presignedUrl, "URL_GENERATED", expiresAt.toString());
         } finally {
             long durationMs = (System.nanoTime() - startTime) / 1_000_000;
-            logger.info("[MONITOR] Processing upload .......... {}s", String.format("%.1f", durationMs / 1000.0));
+            log.info("Upload URL generation completed - duration: {:.1f}s", durationMs / 1000.0);
         }
     }
 
@@ -118,7 +118,7 @@ public class FileManagementService {
 
     private void validateFileStatusForConversion(File file) {
         if (!FileStatus.QUEUED_AND_VALIDATED.name().equalsIgnoreCase(file.getStatus())) {
-            logger.error("FileId: {}, current status: {}", file.getFileId(), file.getStatus());
+            log.warn("File not ready for conversion - fileId: {}, status: {}", file.getFileId(), file.getStatus());
             throw new ApiException("FILE_NOT_READY", "error.file.not.ready");
         }
     }
@@ -175,7 +175,7 @@ public class FileManagementService {
             }
         }
         if (!sent) {
-            logger.error("Failed to send SQS message after retries", lastException);
+            log.error("Failed to send SQS message after {} retries", maxRetries, lastException);
             throw new ApiException("SYSTEM_ERROR", "error.internal");
         }
     }
@@ -198,10 +198,10 @@ public class FileManagementService {
             }
             return result;
         } catch (ApiException e) {
-            logger.error("[FileService] File not found: {}", fileId);
+            log.warn("File not found - fileId: {}", fileId);
             throw e;
         } catch (Exception e) {
-            logger.error("[FileService] Internal error: {}", e.getMessage(), e);
+            log.error("Internal error in getFileStatus - fileId: {}", fileId, e);
             throw new RuntimeException("SYSTEM_ERROR");
         }
     }
@@ -211,7 +211,8 @@ public class FileManagementService {
             UUID uuid = UUID.fromString(fileId);
             File file = fileRepository.findById(uuid).orElseThrow(() -> new ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted"));
             if (!FileStatus.SUCCESS.name().equalsIgnoreCase(file.getStatus()) || file.getConvertedPath() == null) {
-                logger.error("[FileService] FileId {} has not been successfully converted or convertedPath is missing", fileId);
+                log.warn("File not ready for download - fileId: {}, status: {}, convertedPath: {}", 
+                    fileId, file.getStatus(), file.getConvertedPath());
                 throw new ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted");
             }
             
@@ -226,10 +227,10 @@ public class FileManagementService {
             result.put("preSignedUrl", presignedUrl);
             return result;
         } catch (ApiException e) {
-            logger.error("[FileService] File does not exist or has not been successfully converted: {}", fileId);
+            log.warn("File not ready for download - fileId: {}", fileId);
             throw e;
         } catch (Exception e) {
-            logger.error("[FileService] System error when generating download URL: {}", e.getMessage(), e);
+            log.error("System error when generating download URL - fileId: {}", fileId, e);
             throw new RuntimeException("SYSTEM_ERROR");
         }
     }
