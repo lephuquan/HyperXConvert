@@ -20,26 +20,26 @@ interface StatusResponse {
 const getErrorMessage = (err: any): string => {
   if (err.response) {
     if (err.response.status === 404) {
-      return 'Không tìm thấy file. Vui lòng kiểm tra lại hoặc thử lại sau.';
+      return 'file_not_found';
     } else if (err.response.status === 500) {
-      return 'Lỗi hệ thống. Vui lòng thử lại sau.';
+      return 'download_server_error';
     } else {
-      return 'Đã xảy ra lỗi. Vui lòng thử lại.';
+      return 'download_error';
     }
   } else {
-    return 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.';
+    return 'cannot_connect_server';
   }
 };
 
 const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId: string }> = ({ status, loading, fileId }) => {
   const { t } = useTranslation();
-  if (loading) return <Loading text={t('checking_status', 'Đang kiểm tra trạng thái...')} size="md" />;
+  if (loading) return <Loading text={t('checking_status')} size="md" />;
   switch (status) {
     case 'QUEUED_AND_CONVERTED':
     case 'PROCESSING':
       return (
         <div className="flex flex-col items-center">
-          <Loading text={t('converting_file', 'Đang chuyển đổi file, vui lòng chờ...')} size="md" />
+          <Loading text={t('converting_file')} size="md" />
         </div>
       );
     case 'UPLOADED':
@@ -49,20 +49,20 @@ const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId:
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
           </svg>
-          <p className="mt-2 text-base text-gray-700">{t('verifying_file', 'Đang xác thực file, vui lòng chờ...')}</p>
+          <p className="mt-2 text-base text-gray-700">{t('verifying_file')}</p>
         </div>
       );
     case 'QUEUED_AND_VALIDATED':
       return (
         <div className="flex flex-col items-center">
-          <p className="mt-2 text-base text-gray-700">{t('ready_to_convert', 'File đã sẵn sàng để chuyển đổi. Bạn có thể bấm nút chuyển đổi.')}</p>
+          <p className="mt-2 text-base text-gray-700">{t('ready_to_convert')}</p>
         </div>
       );
     case 'SUCCESS':
       return (
         <div className="flex flex-col items-center">
           <div className="text-green-600 text-3xl mb-2">✔️</div>
-          <p className="text-lg font-semibold mb-2">{t('convert_success', 'Chuyển đổi thành công!')}</p>
+          <p className="text-lg font-semibold mb-2">{t('convert_success')}</p>
           <div className="mt-2 w-full flex justify-center">
             <FileDownloader fileId={fileId} />
           </div>
@@ -72,8 +72,8 @@ const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId:
       return (
         <div className="flex flex-col items-center">
           <div className="text-red-500 text-3xl mb-2">❌</div>
-          <p className="text-lg font-semibold mb-2">{t('convert_failed', 'Chuyển đổi thất bại.')}</p>
-          <p className="text-base text-gray-700">{t('try_again_or_contact_support', 'Vui lòng thử lại hoặc liên hệ hỗ trợ.')}</p>
+          <p className="text-lg font-semibold mb-2">{t('convert_failed')}</p>
+          <p className="text-base text-gray-700">{t('try_again_or_contact_support')}</p>
         </div>
       );
     default:
@@ -82,6 +82,7 @@ const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId:
 };
 
 const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({ fileId, onStatusChange }) => {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -130,7 +131,7 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({ fileId, onStatusC
       {!loading && error && (
         <div className="flex flex-col items-center mt-4">
           <div className="text-red-500 text-2xl mb-2">⚠️</div>
-          <p className="text-base text-red-600 text-center">{error}</p>
+          <p className="text-base text-red-600 text-center">{t(error)}</p>
         </div>
       )}
     </div>

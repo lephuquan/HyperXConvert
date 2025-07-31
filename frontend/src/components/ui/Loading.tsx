@@ -25,7 +25,7 @@ const Loading: React.FC<LoadingProps> = ({
         className={`${sizeClasses[size]} border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin`}
       />
       {text && (
-        <p className="text-gray-600 text-sm animate-pulse">{text || t('loading', 'Loading...')}</p>
+        <p className="text-gray-600 text-sm animate-pulse">{text || t('loading')}</p>
       )}
     </div>
   );

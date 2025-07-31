@@ -19,14 +19,13 @@ const Footer: React.FC = () => {
               </h2>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed max-w-md">
-              Nền tảng chuyển đổi file trực tuyến hàng đầu, cung cấp giải pháp chuyển đổi nhanh chóng, 
-              an toàn và tiện lợi cho mọi nhu cầu của bạn.
+              {t('platform_description')}
             </p>
           </div>
 
           {/* Contact Section */}
           <div>
-            <h3 className="text-white font-semibold text-lg mb-4">Liên hệ</h3>
+            <h3 className="text-white font-semibold text-lg mb-4">{t('contact')}</h3>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-gray-400">
@@ -36,7 +35,7 @@ const Footer: React.FC = () => {
                   href="mailto:support@hyperxconvert.com" 
                   className="text-gray-300 hover:text-white transition-colors text-sm"
                 >
-                  support@hyperxconvert.com
+                  {t('support_email')}
                 </a>
               </div>
             </div>
@@ -44,7 +43,7 @@ const Footer: React.FC = () => {
 
           {/* Language Support Section */}
           <div>
-            <h3 className="text-white font-semibold text-lg mb-4">Hỗ trợ ngôn ngữ</h3>
+            <h3 className="text-white font-semibold text-lg mb-4">{t('language_support')}</h3>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-300">VN</span>
@@ -66,7 +65,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-gray-700 pt-6 mb-6">
           <div className="text-center">
             <p className="text-cyan-400 font-medium text-lg">
-              Tiện lợi, nhanh chóng và an toàn
+              {t('convenient_fast_safe')}
             </p>
           </div>
         </div>
@@ -75,7 +74,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-gray-700 pt-6">
           <div className="text-center">
             <p className="text-gray-400 text-sm">
-              © 2025 HyperXConvert. All rights reserved.
+              {t('copyright')}
             </p>
           </div>
         </div>

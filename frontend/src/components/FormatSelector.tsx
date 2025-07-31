@@ -32,7 +32,7 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
   if (!fileExtension || options.length === 0) {
     return (
       <div className="mt-4 text-sm text-gray-500 text-center">
-        {t('upload_valid_file_to_select_format', 'Vui lòng tải lên file hợp lệ để chọn định dạng chuyển đổi.')}
+        {t('upload_valid_file_to_select_format')}
       </div>
     );
   }
@@ -40,7 +40,7 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
   return (
     <div className="mt-4 w-full">
       <label htmlFor="format-select" className="block mb-2 text-base font-medium text-gray-700">
-        {t('select_target_format_label', 'Chọn định dạng đích')}
+        {t('select_target_format_label')}
       </label>
       <select
         id="format-select"
@@ -50,11 +50,11 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
         disabled={disabled}
       >
         <option value="" disabled>
-          {t('select_target_format_placeholder', '-- Chọn định dạng đích --')}
+          {t('select_target_format_placeholder')}
         </option>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
-            {opt.label}
+            {t(opt.label)}
           </option>
         ))}
       </select>

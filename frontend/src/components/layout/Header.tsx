@@ -8,7 +8,7 @@ const Header: React.FC = () => {
 
   const NAV_LINKS = [
     { 
-      name: t('home_page', 'Home'), 
+      name: t('home_page'), 
       href: '#',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
@@ -17,7 +17,7 @@ const Header: React.FC = () => {
       )
     },
     { 
-      name: t('conversion_page', 'Converter'), 
+      name: t('conversion_page'), 
       href: '#',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
@@ -61,7 +61,7 @@ const Header: React.FC = () => {
           {/* Mobile Hamburger */}
           <button
             className="lg:hidden flex items-center justify-center p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
-            aria-label="Open menu"
+            aria-label={t('open_menu')}
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <svg className="h-7 w-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">

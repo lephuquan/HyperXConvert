@@ -60,12 +60,12 @@ const FileConverter: React.FC = () => {
   const validateFile = (file: File): boolean => {
     const extension = file.name.split('.').pop()?.toLowerCase();
     if (!extension || !SUPPORTED_FORMATS.includes(extension as any)) {
-      const msg = t('unsupported_format', 'Định dạng file không được hỗ trợ.');
+      const msg = t('unsupported_format');
       setLocalErrorMessage(msg);
       return false;
     }
     if (file.size > MAX_FILE_SIZE) {
-      const msg = t('file_too_large', 'File quá lớn, tối đa 50MB.');
+      const msg = t('file_too_large');
       setLocalErrorMessage(msg);
       return false;
     }
@@ -118,7 +118,7 @@ const FileConverter: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-md mt-4">
-      <h1 className="text-2xl font-bold text-center mb-4">{t('upload_title', 'Tải File Lên')}</h1>
+      <h1 className="text-2xl font-bold text-center mb-4">{t('upload_title')}</h1>
       <div
         {...(getRootProps() as DropzoneRootProps)}
         className={`border-2 border-dashed p-6 sm:p-8 text-center rounded-lg cursor-pointer transition-colors duration-200 ${
@@ -133,17 +133,17 @@ const FileConverter: React.FC = () => {
         })()}
         <p className="text-base sm:text-lg">
           {isDragActive
-            ? t('drop_here', 'Thả file vào đây')
-            : t('drag_drop_or_click', 'Kéo và thả file tại đây hoặc nhấp để chọn file')}
+            ? t('drop_here')
+            : t('drag_drop_or_click')}
         </p>
         <p className="text-xs sm:text-sm text-gray-500 mt-2">
-          {t('supported_formats', 'Định dạng hỗ trợ')}: {SUPPORTED_FORMATS.join(', ').toUpperCase()} (Tối đa 50MB)
+          {t('supported_formats')}: {SUPPORTED_FORMATS.join(', ').toUpperCase()} ({t('max_file_size')})
         </p>
       </div>
       {selectedFile && (
         <div className="mt-4">
           <p className="text-base sm:text-lg">
-            {t('selected_file', 'File đã chọn')}: {selectedFile.name}
+            {t('selected_file')}: {selectedFile.name}
           </p>
           <button
             className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 w-full"
@@ -153,12 +153,12 @@ const FileConverter: React.FC = () => {
             {uploadStatus === 'uploading' ? (
               <span className="flex items-center justify-center">
                 <ClipLoader size={20} color="#fff" />
-                {t('uploading', 'Đang tải lên...')}
+                {t('uploading')}
               </span>
             ) : uploadStatus === 'completed' ? (
-              t('uploaded', 'Đã tải lên')
+              t('uploaded')
             ) : (
-              t('upload_btn', 'Tải lên')
+                              t('upload_btn')
             )}
           </button>
         </div>
@@ -188,16 +188,16 @@ const FileConverter: React.FC = () => {
           {convertLoading ? (
             <span className="flex items-center justify-center">
               <ClipLoader size={20} color="#fff" />
-              <span className="ml-2">{t('sending_request', 'Đang gửi yêu cầu...')}</span>
+              <span className="ml-2">{t('sending_request')}</span>
             </span>
           ) : convertStatus === 'SUCCESS' ? (
-            t('convert_success', 'Chuyển đổi thành công!')
+            t('convert_success')
           ) : convertStatus === 'FAILED' ? (
-            t('convert_failed', 'Chuyển đổi thất bại')
+                          t('convert_failed')
           ) : jobId !== null ? (
-            t('converting', 'Đang chuyển đổi...')
+            t('converting')
           ) : (
-            t('convert_btn', 'Chuyển đổi')
+                          t('convert_btn')
           )}
         </button>
         {/* Loader trạng thái xác thực file */}
