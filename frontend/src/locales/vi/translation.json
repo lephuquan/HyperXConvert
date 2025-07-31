@@ -48,5 +48,8 @@
   "refresh_page": "Tải lại trang",
   "try_again": "Thử lại",
   "error_details": "Chi tiết lỗi (Dành cho phát triển)",
-  "loading": "Đang tải..."
+  "loading": "Đang tải...",
+  "home_page": "Trang chủ",
+  "conversion_page": "Trang chuyển đổi",
+  "language": "Ngôn ngữ"
 } 

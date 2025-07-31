@@ -23,6 +23,15 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        orbitron: ['Orbitron', 'monospace'],
+      },
+      backgroundImage: {
+        'cyber-gradient': 'linear-gradient(135deg, #00FFC6 0%, #5B00FF 100%)',
+      },
+      textColor: {
+        'logo-light': '#E5E7EB',
+        'logo-cyan': '#00FFC6',
+        'logo-purple': '#5B00FF',
       },
     },
   },
