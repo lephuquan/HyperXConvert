@@ -51,5 +51,20 @@
   "loading": "Đang tải...",
   "home_page": "Trang chủ",
   "conversion_page": "Trang chuyển đổi",
-  "language": "Ngôn ngữ"
+  "language": "Ngôn ngữ",
+  "contact": "Liên hệ",
+  "language_support": "Hỗ trợ ngôn ngữ",
+  "convenient_fast_safe": "Tiện lợi, nhanh chóng và an toàn",
+  "platform_description": "Nền tảng chuyển đổi file trực tuyến hàng đầu, cung cấp giải pháp chuyển đổi nhanh chóng, an toàn và tiện lợi cho mọi nhu cầu của bạn.",
+  "support_email": "support@hyperxconvert.com",
+  "format_pdf_to_word": "PDF sang Word",
+  "format_compress_pdf": "Nén PDF",
+  "format_word_to_pdf": "Word sang PDF",
+  "format_jpg_to_png": "JPG sang PNG",
+  "format_png_to_jpg": "PNG sang JPG",
+  "format_mp4_to_mp3": "MP4 sang MP3",
+  "format_compress_video": "Nén video",
+  "max_file_size": "Tối đa 50MB",
+  "open_menu": "Mở menu",
+  "copyright": "© 2025 HyperXConvert. Bảo lưu mọi quyền."
 } 

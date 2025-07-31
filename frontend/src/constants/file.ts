@@ -17,20 +17,20 @@ export type FormatOption = { label: string; value: string };
 
 export const formatOptionsMap: Record<string, FormatOption[]> = {
   pdf: [
-    { label: 'PDF sang Word', value: 'DOCX' },
-    { label: 'Nén PDF', value: 'COMPRESSED_PDF' },
+    { label: 'format_pdf_to_word', value: 'DOCX' },
+    { label: 'format_compress_pdf', value: 'COMPRESSED_PDF' },
   ],
   docx: [
-    { label: 'Word sang PDF', value: 'PDF' },
+    { label: 'format_word_to_pdf', value: 'PDF' },
   ],
   jpg: [
-    { label: 'JPG sang PNG', value: 'PNG' },
+    { label: 'format_jpg_to_png', value: 'PNG' },
   ],
   png: [
-    { label: 'PNG sang JPG', value: 'JPG' },
+    { label: 'format_png_to_jpg', value: 'JPG' },
   ],
   mp4: [
-    { label: 'MP4 sang MP3', value: 'MP3' },
-    { label: 'Nén video', value: 'COMPRESSED_VIDEO' },
+    { label: 'format_mp4_to_mp3', value: 'MP3' },
+    { label: 'format_compress_video', value: 'COMPRESSED_VIDEO' },
   ],
 }; 

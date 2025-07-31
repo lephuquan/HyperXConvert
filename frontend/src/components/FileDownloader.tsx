@@ -21,7 +21,7 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = ''
       const res = await axios.get(`/file/download/${fileId}`);
       const preSignedUrl = res.data?.preSignedUrl || res.data?.downloadUrl;
       if (!preSignedUrl) {
-        setError(t('no_download_link', 'Không nhận được liên kết tải file. Vui lòng thử lại.'));
+        setError(t('no_download_link'));
         setLoading(false);
         return;
       }
@@ -38,14 +38,14 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = ''
       setLoading(false);
       if (err.response) {
         if (err.response.status === 404) {
-          setError(t('file_not_found', 'File không tồn tại hoặc chưa được chuyển đổi.'));
+          setError(t('file_not_found'));
         } else if (err.response.status === 500) {
-          setError(t('download_server_error', 'Lỗi hệ thống khi tải file. Vui lòng thử lại sau.'));
+                      setError(t('download_server_error'));
         } else {
-          setError(t('download_error', 'Đã xảy ra lỗi khi tải file. Vui lòng thử lại.'));
+                      setError(t('download_error'));
         }
       } else {
-        setError(t('cannot_connect_server', 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.'));
+                  setError(t('cannot_connect_server'));
       }
     }
   };
@@ -57,7 +57,7 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = ''
         onClick={handleDownload}
         disabled={loading}
       >
-        {loading ? <Loading text={t('preparing_download', 'Đang chuẩn bị tải...')} size="sm" /> : (buttonText || t('download_btn', 'Tải file về'))}
+        {loading ? <Loading text={t('preparing_download')} size="sm" /> : (buttonText || t('download_btn'))}
       </button>
       {error && (
         <p className="mt-2 text-sm text-red-600 text-center w-full max-w-xs">{error}</p>
