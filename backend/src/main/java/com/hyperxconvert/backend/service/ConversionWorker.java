@@ -137,10 +137,16 @@ public class ConversionWorker {
             FileFormat targetFormat = FileFormat.fromString(job.getTargetFormat());
             String fileExtension = targetFormat != null ? targetFormat.getExtension() : job.getTargetFormat().toLowerCase();
             
-            // Generate filename with original name + converted extension
+            // Generate filename with original name + converted extension and format
             String originalFilename = fileEntity.getOriginalFilename();
-            String convertedFilename = FilenameUtils.getFilenameWithExtension(originalFilename, fileExtension);
-            
+            String action = "converted"; // default action
+            // Nếu là giảm dung lượng file, đổi action thành "compressed"
+            if (targetFormat == FileFormat.COMPRESSED_PDF || targetFormat == FileFormat.COMPRESSED_VIDEO) {
+                action = "compressed";
+            }
+            java.util.Locale locale = java.util.Locale.ENGLISH;
+            // For now, always use ENGLISH (UTC) for background jobs
+            String convertedFilename = FilenameUtils.getProcessedFilename(originalFilename, action, fileExtension, locale);
             String convertedKey = String.format("converted/%s/%s", fileEntity.getUserIp(), convertedFilename);
             s3Service.uploadFileToS3(convertedKey, convertedFile, "application/octet-stream");
             // 7. Update DB: files, convert_queue_logs
@@ -202,4 +208,4 @@ public class ConversionWorker {
         }
     }
 
-} 
+}
