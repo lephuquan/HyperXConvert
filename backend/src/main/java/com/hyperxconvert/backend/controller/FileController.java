@@ -3,6 +3,7 @@ package com.hyperxconvert.backend.controller;
 import com.hyperxconvert.backend.dto.request.FileConvertRequest;
 import com.hyperxconvert.backend.dto.response.FileConvertResponse;
 import com.hyperxconvert.backend.dto.request.UploadUrlRequest;
+import com.hyperxconvert.backend.dto.response.FileStatusResponse;
 import com.hyperxconvert.backend.dto.response.UploadUrlResponse;
 import com.hyperxconvert.backend.service.FileManagementService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,8 +39,8 @@ public class FileController {
     }
 
     @GetMapping("/status/{fileId}")
-    public ResponseEntity<?> getFileStatus(@PathVariable String fileId) {
-    return ResponseEntity.ok(fileService.getFileStatus(fileId));
+    public ResponseEntity<FileStatusResponse> getFileStatus(@PathVariable String fileId) {
+        return ResponseEntity.ok(fileService.getFileStatus(fileId));
     }
 
     @GetMapping("/download/{fileId}")

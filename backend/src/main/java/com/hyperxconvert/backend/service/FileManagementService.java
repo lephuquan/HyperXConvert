@@ -5,6 +5,7 @@ import com.hyperxconvert.backend.dto.request.UploadUrlRequest;
 import com.hyperxconvert.backend.dto.response.UploadUrlResponse;
 import com.hyperxconvert.backend.dto.request.FileConvertRequest;
 import com.hyperxconvert.backend.dto.response.FileConvertResponse;
+import com.hyperxconvert.backend.dto.response.FileStatusResponse;
 import com.hyperxconvert.backend.entity.ConvertLog;
 import com.hyperxconvert.backend.entity.File;
 import com.hyperxconvert.backend.enums.FileStatus;
@@ -28,6 +29,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import com.hyperxconvert.backend.constant.FileFormatConstants;
+import com.hyperxconvert.backend.constant.StatusMessageConstants;
 import com.hyperxconvert.backend.enums.FileFormat;
 import com.hyperxconvert.backend.util.FilenameUtils;
 
@@ -83,7 +85,7 @@ public class FileManagementService {
     }
 
     private void saveFileAndLog(UUID fileId, String ipAddress, String s3Key, String extension, LocalDateTime now, LocalDateTime expiresAt, String originalFilename) {
-        File file = new File(fileId, ipAddress, s3Key, extension.toUpperCase(), null, FileStatus.UPLOADED.name(), expiresAt, originalFilename);
+        File file = new File(fileId, ipAddress, s3Key, extension.toUpperCase(), null, FileStatus.UPLOADED.getValue(), expiresAt, originalFilename);
         file.setCreatedAt(now);
         file.setUpdatedAt(now);
         fileRepository.save(file);
@@ -91,7 +93,7 @@ public class FileManagementService {
         log.setId(UUID.randomUUID());
         log.setFileId(fileId);
         log.setUserIp(ipAddress);
-        log.setStatus(FileStatus.UPLOADED.name());
+        log.setStatus(FileStatus.UPLOADED.getValue());
         log.setCreatedAt(now);
         log.setUpdatedAt(now);
         convertLogRepository.save(log);
@@ -104,7 +106,7 @@ public class FileManagementService {
         String targetFormat = validateAndGetTargetFormat(request.getTargetFormat());
         UUID jobId = logConversionJob(fileId, file.getUserIp());
         sendMessageToSqsWithRetry(fileId, targetFormat, file.getOriginalPath());
-        return new FileConvertResponse(jobId.toString(), FileStatus.QUEUED_AND_VALIDATED.name());
+        return new FileConvertResponse(jobId.toString(), FileStatus.VALIDATED.getValue());
     }
 
     private UUID parseFileId(String fileIdStr) {
@@ -120,7 +122,7 @@ public class FileManagementService {
     }
 
     private void validateFileStatusForConversion(File file) {
-        if (!FileStatus.QUEUED_AND_VALIDATED.name().equalsIgnoreCase(file.getStatus())) {
+        if (!FileStatus.VALIDATED.getValue().equalsIgnoreCase(file.getStatus())) {
             log.warn("File not ready for conversion - fileId: {}, status: {}", file.getFileId(), file.getStatus());
             throw new ApiException("FILE_NOT_READY", "error.file.not.ready");
         }
@@ -140,7 +142,7 @@ public class FileManagementService {
         log.setId(jobId);
         log.setFileId(fileId);
         log.setUserIp(userIp);
-        log.setStatus(FileStatus.QUEUED_AND_CONVERTED.name());
+        log.setStatus(FileStatus.CONVERTING.getValue());
         log.setCreatedAt(LocalDateTime.now());
         log.setUpdatedAt(LocalDateTime.now());
         convertLogRepository.save(log);
@@ -183,23 +185,38 @@ public class FileManagementService {
         }
     }
 
-    public Map<String, Object> getFileStatus(String fileId) {
+    public FileStatusResponse getFileStatus(String fileId) {
         try {
             UUID uuid = UUID.fromString(fileId);
             File file = fileRepository.findById(uuid).orElseThrow(() -> new ApiException("FILE_NOT_FOUND", "error.file.not.found"));
-            Map<String, Object> result = new HashMap<>();
-            result.put("status", file.getStatus());
-            if (FileStatus.SUCCESS.name().equalsIgnoreCase(file.getStatus()) && file.getConvertedPath() != null) {
+            
+            FileStatusResponse response = new FileStatusResponse();
+            response.setStatus(file.getStatus());
+            response.setOriginalFilename(file.getOriginalFilename());
+            response.setFormatFrom(file.getFormatFrom());
+            response.setFormatTo(file.getFormatTo());
+            
+            // Add status-specific information
+            response.setMessage(StatusMessageConstants.getMessage(file.getStatus()));
+            
+            // Add error code for failed statuses
+            FileStatus currentStatus = FileStatus.fromString(file.getStatus());
+            if (currentStatus != null && currentStatus.isErrorStatus()) {
+                response.setErrorCode(getLatestErrorCode(file.getFileId()));
+            }
+            
+            // Add download URL for converted status
+            if (currentStatus != null && currentStatus == FileStatus.CONVERTED && file.getConvertedPath() != null) {
                 // Generate filename for download with original name + converted extension
-                String originalFilename = file.getOriginalFilename();
                 FileFormat targetFormat = FileFormat.fromString(file.getFormatTo());
                 String extension = targetFormat != null ? targetFormat.getExtension() : file.getFormatTo().toLowerCase();
-                String downloadFilename = FilenameUtils.getFilenameWithExtension(originalFilename, extension);
+                String downloadFilename = FilenameUtils.getFilenameWithExtension(file.getOriginalFilename(), extension);
                 
                 String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), downloadFilename, presignedUrlExpiry);
-                result.put("downloadUrl", presignedUrl);
+                response.setDownloadUrl(presignedUrl);
             }
-            return result;
+            
+            return response;
         } catch (ApiException e) {
             log.warn("File not found - fileId: {}", fileId);
             throw e;
@@ -208,12 +225,25 @@ public class FileManagementService {
             throw new RuntimeException("SYSTEM_ERROR");
         }
     }
+    
+    private String getLatestErrorCode(UUID fileId) {
+        try {
+            // Get the latest error log for this file
+            return convertLogRepository.findTopByFileIdOrderByCreatedAtDesc(fileId)
+                .filter(log -> log.getErrorCode() != null)
+                .map(log -> log.getErrorCode())
+                .orElse(null);
+        } catch (Exception e) {
+            log.warn("Error getting latest error code for fileId: {}", fileId, e);
+            return null;
+        }
+    }
 
     public Map<String, Object> getDownloadUrl(String fileId) {
         try {
             UUID uuid = UUID.fromString(fileId);
             File file = fileRepository.findById(uuid).orElseThrow(() -> new ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted"));
-            if (!FileStatus.SUCCESS.name().equalsIgnoreCase(file.getStatus()) || file.getConvertedPath() == null) {
+            if (!FileStatus.CONVERTED.getValue().equalsIgnoreCase(file.getStatus()) || file.getConvertedPath() == null) {
                 log.warn("File not ready for download - fileId: {}, status: {}, convertedPath: {}", 
                     fileId, file.getStatus(), file.getConvertedPath());
                 throw new ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted");
