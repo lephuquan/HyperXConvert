@@ -56,4 +56,19 @@ public class FilenameUtils {
         String baseFilename = getBaseFilename(originalFilename);
         return baseFilename + "." + newExtension;
     }
-} 
+
+    /**
+     * Generate converted or compressed filename with format:
+     * originalName-converted-YYYYMMDD-HHmm.ext or originalName-compressed-YYYYMMDD-HHmm.ext
+     * Accepts a java.util.Locale to determine timezone (Vietnam/UTC)
+     */
+    public static String getProcessedFilename(String originalFilename, String action, String extension, java.util.Locale locale) {
+        String base = getBaseFilename(originalFilename);
+        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmm");
+        java.time.ZoneId zoneId = (locale != null && (locale.getLanguage().equalsIgnoreCase("vi") || locale.getCountry().equalsIgnoreCase("VN")))
+            ? java.time.ZoneId.of("Asia/Ho_Chi_Minh")
+            : java.time.ZoneOffset.UTC;
+        String timestamp = java.time.ZonedDateTime.now(zoneId).format(dtf);
+        return base + "-" + action + "-" + timestamp + "." + extension;
+    }
+}

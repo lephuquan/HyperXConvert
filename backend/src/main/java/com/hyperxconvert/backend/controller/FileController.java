@@ -39,14 +39,16 @@ public class FileController {
     }
 
     @GetMapping("/status/{fileId}")
-    public ResponseEntity<FileStatusResponse> getFileStatus(@PathVariable String fileId) {
-        return ResponseEntity.ok(fileService.getFileStatus(fileId));
+    public ResponseEntity<FileStatusResponse> getFileStatus(@PathVariable String fileId, HttpServletRequest request) {
+        java.util.Locale locale = request.getLocale();
+        return ResponseEntity.ok(fileService.getFileStatus(fileId, locale));
     }
 
     @GetMapping("/download/{fileId}")
-    public ResponseEntity<?> getDownloadUrl(@PathVariable String fileId) {
+    public ResponseEntity<?> getDownloadUrl(@PathVariable String fileId, HttpServletRequest request) {
         final String method = "GetDownloadUrl";
         logger.info("[{}] Request to generate pre-signed download URL for fileId: {}", method, fileId);
-        return ResponseEntity.ok(fileService.getDownloadUrl(fileId));
+        java.util.Locale locale = request.getLocale();
+        return ResponseEntity.ok(fileService.getDownloadUrl(fileId, locale));
     }
-} 
+}
