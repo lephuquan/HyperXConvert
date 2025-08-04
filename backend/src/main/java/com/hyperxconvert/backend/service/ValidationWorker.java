@@ -89,14 +89,17 @@ public class ValidationWorker {
 
         if (!validateUploadMessage(uploadMessage)) return;
         if (!validateS3Bucket()) return;
+        
+        // Set status to VALIDATING when starting validation
+        updateFileStatus(uploadMessage.getFileId(), FileStatus.VALIDATING.getValue());
 
         try (InputStream s3InputStream = downloadFileFromS3(uploadMessage.getFilePath())) {
             if (!validateFileSize(s3InputStream, uploadMessage, now)) return;
             if (!validateMimeType(s3InputStream, uploadMessage, now)) return;
             if (!scanForVirus(uploadMessage.getFilePath(), uploadMessage, now)) return;
 
-            updateFileStatus(uploadMessage.getFileId(), FileStatus.QUEUED_AND_VALIDATED.name());
-            logConvertQueue(uploadMessage, FileStatus.QUEUED_AND_VALIDATED.name(), null, now, LocalDateTime.now());
+            updateFileStatus(uploadMessage.getFileId(), FileStatus.VALIDATED.getValue());
+            logConvertQueue(uploadMessage, FileStatus.VALIDATED.getValue(), null, now, LocalDateTime.now());
         } catch (Exception e) {
             log.error("Error processing validation message - fileId: {}", 
                 uploadMessage != null ? uploadMessage.getFileId() : "unknown", e);
@@ -206,8 +209,8 @@ public class ValidationWorker {
     }
 
     private void handleValidationFailure(UploadMessage uploadMessage, String errorCode, LocalDateTime startedAt) {
-        updateFileStatus(uploadMessage.getFileId(), FileStatus.FAILED.name());
-        logConvertQueue(uploadMessage, FileStatus.FAILED.name(), errorCode, startedAt, LocalDateTime.now());
+                    updateFileStatus(uploadMessage.getFileId(), FileStatus.VALIDATION_FAILED.getValue());
+            logConvertQueue(uploadMessage, FileStatus.VALIDATION_FAILED.getValue(), errorCode, startedAt, LocalDateTime.now());
     }
 
     private void updateFileStatus(UUID fileId, String status) {

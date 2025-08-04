@@ -104,6 +104,10 @@ public class ConversionWorker {
             Optional<com.hyperxconvert.backend.entity.File> fileOpt = fileRepository.findById(UUID.fromString(job.getFileId()));
             if (fileOpt.isEmpty()) throw new Exception("error.file.not.found");
             fileEntity = fileOpt.get();
+            
+            // Set status to CONVERTING when starting conversion
+            fileEntity.setStatus(FileStatus.CONVERTING.getValue());
+            fileRepository.save(fileEntity);
             // 2. Download file from S3
             inputFile = s3Service.downloadFileFromS3(job.getOriginalPath());
             // 2.1 If converting DOCX -> PDF, copy temp file as .docx
@@ -140,11 +144,11 @@ public class ConversionWorker {
             String convertedKey = String.format("converted/%s/%s", fileEntity.getUserIp(), convertedFilename);
             s3Service.uploadFileToS3(convertedKey, convertedFile, "application/octet-stream");
             // 7. Update DB: files, convert_queue_logs
-            fileEntity.setStatus(FileStatus.SUCCESS.name());
+            fileEntity.setStatus(FileStatus.CONVERTED.getValue());
             fileEntity.setConvertedPath(convertedKey);
             fileEntity.setFormatTo(job.getTargetFormat());
             fileRepository.save(fileEntity);
-            ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), FileStatus.SUCCESS.name(), now, null, now, now);
+            ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), FileStatus.CONVERTED.getValue(), now, null, now, now);
             convertLogRepository.save(logEntry);
             // 8. Delete message from queue
             sqsClient.deleteMessage(DeleteMessageRequest.builder().queueUrl(convertQueueUrl).receiptHandle(msg.receiptHandle()).build());
@@ -180,12 +184,12 @@ public class ConversionWorker {
                 // Delete message from main queue to avoid infinite loop
                 sqsClient.deleteMessage(DeleteMessageRequest.builder().queueUrl(convertQueueUrl).receiptHandle(msg.receiptHandle()).build());
             }
-            // Update DB status to FAILED
+            // Update DB status to CONVERSION_FAILED
             if (fileEntity != null) {
-                fileEntity.setStatus(FileStatus.FAILED.name());
+                fileEntity.setStatus(FileStatus.CONVERSION_FAILED.getValue());
                 fileRepository.save(fileEntity);
                 String shortErrorCode = (errorCode != null && errorCode.length() > 50) ? errorCode.substring(0, 50) : errorCode;
-                ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), FileStatus.FAILED.name(), now, shortErrorCode, now, now);
+                ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), FileStatus.CONVERSION_FAILED.getValue(), now, shortErrorCode, now, now);
                 convertLogRepository.save(logEntry);
             }
         } finally {
