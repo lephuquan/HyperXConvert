@@ -40,12 +40,12 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = ''
         if (err.response.status === 404) {
           setError(t('file_not_found'));
         } else if (err.response.status === 500) {
-                      setError(t('download_server_error'));
+          setError(t('download_server_error'));
         } else {
-                      setError(t('download_error'));
+          setError(t('download_error'));
         }
       } else {
-                  setError(t('cannot_connect_server'));
+        setError(t('cannot_connect_server'));
       }
     }
   };

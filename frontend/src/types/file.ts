@@ -1,6 +1,16 @@
 // Định nghĩa type cho SUPPORTED_FORMATS
 export type SupportedFormat = 'pdf' | 'jpg' | 'png' | 'mp4' | 'docx';
 
+// Định nghĩa các status mới từ BE
+export type FileStatus = 
+  | 'UPLOADED'
+  | 'VALIDATING'
+  | 'VALIDATION_FAILED'
+  | 'VALIDATED'
+  | 'CONVERTING'
+  | 'CONVERSION_FAILED'
+  | 'CONVERTED';
+
 // Response từ API upload-url
 export interface UploadUrlResponse {
   uploadUrl: string;
@@ -10,5 +20,12 @@ export interface UploadUrlResponse {
 // Response từ API convert
 export interface ConvertResponse {
   jobId: string;
-  status: string; // Có thể refine thêm nếu có enum cụ thể
+  status: FileStatus;
+}
+
+// Response từ API status
+export interface StatusResponse {
+  status: FileStatus;
+  downloadUrl?: string;
+  message?: string;
 } 
