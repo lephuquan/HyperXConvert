@@ -3,18 +3,12 @@ import axios from '../api/api';
 import Loading from './ui/Loading';
 import FileDownloader from './FileDownloader';
 import { useTranslation } from 'react-i18next';
+import { FileStatus, StatusResponse } from '../types/file';
+import { FILE_STATUS } from '../constants/file';
 
 interface FileStatusTrackerProps {
   fileId: string;
-  onStatusChange?: (status: Status | null) => void;
-}
-
-type Status = 'UPLOADED' | 'QUEUED_AND_VALIDATED' | 'QUEUED_AND_CONVERTED' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
-
-interface StatusResponse {
-  status: Status;
-  downloadUrl?: string;
-  message?: string;
+  onStatusChange?: (status: FileStatus | null) => void;
 }
 
 const getErrorMessage = (err: any): string => {
@@ -31,49 +25,69 @@ const getErrorMessage = (err: any): string => {
   }
 };
 
-const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId: string }> = ({ status, loading, fileId }) => {
+const StatusContent: React.FC<{ status: FileStatus | null; loading: boolean; fileId: string }> = ({ status, loading, fileId }) => {
   const { t } = useTranslation();
   if (loading) return <Loading text={t('checking_status')} size="md" />;
+  
   switch (status) {
-    case 'QUEUED_AND_CONVERTED':
-    case 'PROCESSING':
-      return (
-        <div className="flex flex-col items-center">
-          <Loading text={t('converting_file')} size="md" />
-        </div>
-      );
-    case 'UPLOADED':
+    case FILE_STATUS.UPLOADED:
       return (
         <div className="flex flex-col items-center">
           <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
           </svg>
-          <p className="mt-2 text-base text-gray-700">{t('verifying_file')}</p>
+          <p className="mt-2 text-base text-gray-700">{t('file_uploaded_waiting_validation')}</p>
         </div>
       );
-    case 'QUEUED_AND_VALIDATED':
+    case FILE_STATUS.VALIDATING:
       return (
         <div className="flex flex-col items-center">
-          <p className="mt-2 text-base text-gray-700">{t('ready_to_convert')}</p>
+          <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+          <p className="mt-2 text-base text-gray-700">{t('validating_file')}</p>
         </div>
       );
-    case 'SUCCESS':
+    case FILE_STATUS.VALIDATION_FAILED:
+      return (
+        <div className="flex flex-col items-center">
+          <div className="text-red-500 text-3xl mb-2">❌</div>
+          <p className="text-lg font-semibold mb-2">{t('validation_failed')}</p>
+          <p className="text-base text-gray-700">{t('file_validation_failed_message')}</p>
+        </div>
+      );
+    case FILE_STATUS.VALIDATED:
+      // Hiển thị loader khi file đã được xác thực thành công và đang chờ convert
+      return (
+        <div className="flex flex-col items-center">
+          <Loading text={t('preparing_conversion')} size="md" />
+        </div>
+      );
+    case FILE_STATUS.CONVERTING:
+      return (
+        <div className="flex flex-col items-center">
+          <Loading text={t('converting_file')} size="md" />
+        </div>
+      );
+    case FILE_STATUS.CONVERSION_FAILED:
+      return (
+        <div className="flex flex-col items-center">
+          <div className="text-red-500 text-3xl mb-2">❌</div>
+          <p className="text-lg font-semibold mb-2">{t('conversion_failed')}</p>
+          <p className="text-base text-gray-700">{t('file_conversion_failed_message')}</p>
+        </div>
+      );
+    case FILE_STATUS.CONVERTED:
       return (
         <div className="flex flex-col items-center">
           <div className="text-green-600 text-3xl mb-2">✔️</div>
           <p className="text-lg font-semibold mb-2">{t('convert_success')}</p>
+          <p className="text-base text-gray-700 mb-4">{t('file_ready_for_download')}</p>
           <div className="mt-2 w-full flex justify-center">
             <FileDownloader fileId={fileId} />
           </div>
-        </div>
-      );
-    case 'FAILED':
-      return (
-        <div className="flex flex-col items-center">
-          <div className="text-red-500 text-3xl mb-2">❌</div>
-          <p className="text-lg font-semibold mb-2">{t('convert_failed')}</p>
-          <p className="text-base text-gray-700">{t('try_again_or_contact_support')}</p>
         </div>
       );
     default:
@@ -83,7 +97,7 @@ const StatusContent: React.FC<{ status: Status | null; loading: boolean; fileId:
 
 const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({ fileId, onStatusChange }) => {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<Status | null>(null);
+  const [status, setStatus] = useState<FileStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -102,7 +116,11 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({ fileId, onStatusC
       setStatus(res.data.status);
       if (onStatusChange) onStatusChange(res.data.status);
       setLoading(false);
-      if (res.data.status === 'SUCCESS' || res.data.status === 'FAILED') {
+      
+      // Dừng polling khi đạt trạng thái cuối cùng
+      if (res.data.status === FILE_STATUS.CONVERTED || 
+          res.data.status === FILE_STATUS.CONVERSION_FAILED || 
+          res.data.status === FILE_STATUS.VALIDATION_FAILED) {
         clearPolling();
       }
     } catch (err: any) {

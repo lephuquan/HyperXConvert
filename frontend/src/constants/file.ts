@@ -2,6 +2,28 @@
 export const SUPPORTED_FORMATS = ['pdf', 'jpg', 'png', 'mp4', 'docx'] as const;
 export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
+// Định nghĩa các status mới từ BE
+export const FILE_STATUS = {
+  UPLOADED: 'UPLOADED',
+  VALIDATING: 'VALIDATING',
+  VALIDATION_FAILED: 'VALIDATION_FAILED',
+  VALIDATED: 'VALIDATED',
+  CONVERTING: 'CONVERTING',
+  CONVERSION_FAILED: 'CONVERSION_FAILED',
+  CONVERTED: 'CONVERTED',
+} as const;
+
+// Mapping status để hiển thị UI
+export const STATUS_DISPLAY_MAP = {
+  [FILE_STATUS.UPLOADED]: 'uploaded',
+  [FILE_STATUS.VALIDATING]: 'validating',
+  [FILE_STATUS.VALIDATION_FAILED]: 'validation_failed',
+  [FILE_STATUS.VALIDATED]: 'validated',
+  [FILE_STATUS.CONVERTING]: 'converting',
+  [FILE_STATUS.CONVERSION_FAILED]: 'conversion_failed',
+  [FILE_STATUS.CONVERTED]: 'converted',
+} as const;
+
 export const ERROR_MESSAGES = {
   invalidResponse: 'invalid_response',
   convertError: 'convert_error',
@@ -11,6 +33,8 @@ export const ERROR_MESSAGES = {
   fileTooLarge: 'file_too_large',
   uploadError: 'upload_error',
   s3Error: 's3_error',
+  validationFailed: 'validation_failed',
+  conversionFailed: 'conversion_failed',
 };
 
 export type FormatOption = { label: string; value: string };
