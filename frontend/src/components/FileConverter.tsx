@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDropzone, DropzoneRootProps, DropzoneInputProps } from 'react-dropzone';
 import ReactGA from 'react-ga4';
 import { useTranslation } from 'react-i18next';
 import FormatSelector from './FormatSelector';
 import FileStatusTracker from './FileStatusTracker';
 import { ClipLoader } from 'react-spinners';
-import { SUPPORTED_FORMATS, MAX_FILE_SIZE } from '../constants/file';
-import { useFileUpload } from '../hooks/useFileUpload';
+import { SUPPORTED_FORMATS, MAX_FILE_SIZE, FILE_STATUS } from '../constants/file';
 import { useFileConvert } from '../hooks/useFileConvert';
 import UploadProgress from './UploadProgress';
 import ErrorMessage from './ErrorMessage';
+import { FileStatus } from '../types/file';
+import axios from '../api/api';
 
 const ACCEPT_MIME: Record<string, string[]> = {
   'application/pdf': ['.pdf'],
@@ -24,26 +25,21 @@ const FileConverter: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileExtension, setFileExtension] = useState<string | null>(null);
   const [targetFormat, setTargetFormat] = useState<string | null>(null);
-  const [fileStatus, setFileStatus] = useState<string | null>(null);
+  const [fileStatus, setFileStatus] = useState<FileStatus | null>(null);
   const [localErrorMessage, setLocalErrorMessage] = useState<string>('');
 
-  // Custom hooks
-  const {
-    uploadProgress,
-    uploadStatus,
-    errorMessage: uploadErrorMessage,
-    fileId,
-    handleUpload,
-    resetUpload,
-  } = useFileUpload();
+  // Custom hooks - chỉ sử dụng useFileConvert mới
   const {
     convertLoading,
     jobId,
-    convertStatus,
     formatError,
+    uploadProgress,
+    uploadStatus,
+    fileId,
     handleConvert,
     resetConvert,
     setConvertStatus,
+    resetConvertLoading,
   } = useFileConvert();
 
   // Reset tất cả state liên quan khi chọn file mới
@@ -52,11 +48,11 @@ const FileConverter: React.FC = () => {
     setFileExtension(null);
     setTargetFormat(null);
     setFileStatus(null);
-    resetUpload();
+    setLocalErrorMessage('');
     resetConvert();
   };
 
-  // Validate file (dùng chung cho onDrop và upload)
+  // Validate file (dùng chung cho onDrop)
   const validateFile = (file: File): boolean => {
     const extension = file.name.split('.').pop()?.toLowerCase();
     if (!extension || !SUPPORTED_FORMATS.includes(extension as any)) {
@@ -93,28 +89,73 @@ const FileConverter: React.FC = () => {
     accept: ACCEPT_MIME,
   });
 
-  // Handler for upload button
-  const onUploadClick = async () => {
-    if (selectedFile) {
-      await handleUpload(selectedFile);
-    }
-  };
-
-  // Handler for convert button
+  // Handler for convert button - giờ sẽ xử lý cả upload và convert
   const onConvertClick = async () => {
-    if (fileId && targetFormat) {
-      await handleConvert(fileId, targetFormat);
+    if (selectedFile && targetFormat) {
+      // Google Analytics event
+      ReactGA.event({ 
+        category: 'Conversion', 
+        action: 'Start', 
+        label: `${selectedFile.name} -> ${targetFormat}` 
+      });
+      await handleConvert(selectedFile, targetFormat);
     }
   };
 
-  // Gom lỗi upload, convert và local để hiển thị qua ErrorMessage
+  // Effect để gọi API convert khi status là VALIDATED
+  useEffect(() => {
+    const callConvertAPI = async () => {
+      if (fileStatus === FILE_STATUS.VALIDATED && fileId && targetFormat && !jobId) {
+        try {
+          const payload = { fileId, targetFormat };
+          const response = await axios.post('/file/convert', payload);
+          if (response.data && response.data.jobId) {
+            setConvertStatus(response.data.status);
+            // Google Analytics event
+            ReactGA.event({ 
+              category: 'Conversion', 
+              action: 'ConvertRequest', 
+              label: `${selectedFile?.name} -> ${targetFormat}` 
+            });
+          }
+        } catch (error: any) {
+          console.error('Error calling convert API:', error);
+          let msg = t('convert_error');
+          if (error?.response?.data?.message) {
+            msg = error.response.data.message;
+          }
+          setLocalErrorMessage(msg);
+        }
+      }
+    };
+
+    callConvertAPI();
+  }, [fileStatus, fileId, targetFormat, jobId, setConvertStatus, t, selectedFile]);
+
+  // Gom lỗi convert và local để hiển thị qua ErrorMessage
   const errorToShow = localErrorMessage
     ? localErrorMessage
-    : uploadStatus === 'error' && uploadErrorMessage
-      ? uploadErrorMessage
-      : formatError
-        ? formatError
-        : '';
+    : formatError
+      ? formatError
+      : '';
+
+  // Kiểm tra xem có nên disable nút convert không
+  const shouldDisableConvertButton = 
+    !targetFormat ||
+    !selectedFile ||
+    convertLoading ||
+    uploadStatus === 'uploading' ||
+    jobId !== null || // Disable nếu đã gửi yêu cầu chuyển đổi
+    (!!fileId && uploadStatus === 'completed') || // Disable nếu đã upload và đang chờ xử lý
+    fileStatus === FILE_STATUS.VALIDATION_FAILED || // Disable nếu validation failed
+    fileStatus === FILE_STATUS.CONVERSION_FAILED; // Disable nếu conversion failed
+
+  // Kiểm tra xem có nên hiển thị FileStatusTracker không
+  const shouldShowStatusTracker = 
+    fileId && 
+    uploadStatus === 'completed' && 
+    (fileStatus !== FILE_STATUS.VALIDATION_FAILED && 
+     fileStatus !== FILE_STATUS.CONVERSION_FAILED);
 
   return (
     <div className="max-w-md mx-auto p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-md mt-4">
@@ -145,22 +186,6 @@ const FileConverter: React.FC = () => {
           <p className="text-base sm:text-lg">
             {t('selected_file')}: {selectedFile.name}
           </p>
-          <button
-            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 w-full"
-            onClick={onUploadClick}
-            disabled={uploadStatus === 'uploading' || uploadStatus === 'completed'}
-          >
-            {uploadStatus === 'uploading' ? (
-              <span className="flex items-center justify-center">
-                <ClipLoader size={20} color="#fff" />
-                {t('uploading')}
-              </span>
-            ) : uploadStatus === 'completed' ? (
-              t('uploaded')
-            ) : (
-                              t('upload_btn')
-            )}
-          </button>
         </div>
       )}
       {uploadStatus === 'uploading' && (
@@ -171,44 +196,44 @@ const FileConverter: React.FC = () => {
         <FormatSelector
           fileExtension={fileExtension}
           onFormatChange={setTargetFormat}
-          disabled={convertLoading || fileStatus === 'UPLOADED'}
+          disabled={convertLoading || uploadStatus === 'uploading' || jobId !== null || (!!fileId && uploadStatus === 'completed')}
         />
-        {/* Nút Chuyển đổi */}
+        {/* Nút Chuyển đổi - giờ sẽ xử lý cả upload và convert */}
         <button
           className="mt-4 bg-blue-500 text-white font-semibold px-4 py-3 rounded-lg w-full hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-400 transition flex items-center justify-center"
           onClick={onConvertClick}
-          disabled={
-            !targetFormat ||
-            !fileId ||
-            convertLoading ||
-            (!!fileStatus && fileStatus !== 'QUEUED_AND_VALIDATED') ||
-            jobId !== null // Disable nếu đã gửi yêu cầu chuyển đổi
-          }
+          disabled={shouldDisableConvertButton}
         >
-          {convertLoading ? (
+          {convertLoading || uploadStatus === 'uploading' ? (
             <span className="flex items-center justify-center">
               <ClipLoader size={20} color="#fff" />
-              <span className="ml-2">{t('sending_request')}</span>
+              <span className="ml-2">
+                {uploadStatus === 'uploading' ? t('uploading') : t('sending_request')}
+              </span>
             </span>
-          ) : convertStatus === 'SUCCESS' ? (
+          ) : fileStatus === FILE_STATUS.CONVERTED ? (
             t('convert_success')
-          ) : convertStatus === 'FAILED' ? (
-                          t('convert_failed')
-          ) : jobId !== null ? (
+          ) : fileStatus === FILE_STATUS.VALIDATION_FAILED || fileStatus === FILE_STATUS.CONVERSION_FAILED ? (
+            t('convert_failed')
+          ) : jobId !== null || (!!fileId && uploadStatus === 'completed') ? (
             t('converting')
           ) : (
-                          t('convert_btn')
+            t('convert_btn')
           )}
         </button>
         {/* Loader trạng thái xác thực file */}
-        {fileId && uploadStatus === 'completed' && (
+        {shouldShowStatusTracker && (
           <div className="mt-6">
             <FileStatusTracker
               fileId={fileId}
               onStatusChange={(status) => {
                 setFileStatus(status);
-                if (status === 'SUCCESS' || status === 'FAILED') {
+                if (status === FILE_STATUS.CONVERTED || 
+                    status === FILE_STATUS.VALIDATION_FAILED || 
+                    status === FILE_STATUS.CONVERSION_FAILED) {
                   setConvertStatus(status);
+                  // Reset convertLoading khi có kết quả cuối cùng
+                  resetConvertLoading();
                 }
               }}
             />
