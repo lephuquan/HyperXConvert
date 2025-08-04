@@ -53,3 +53,5 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+
+.idea/
