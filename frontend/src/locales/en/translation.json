@@ -49,8 +49,8 @@
   "try_again": "Try conversion again",
   "error_details": "Conversion error details (For development)",
   "loading": "Loading converter...",
-  "home_page": "Home Page",
-  "conversion_page": "File Converter",
+  "reload_page": "Reload page",
+  "choose_format": "Choose format",
   "language": "Select Language",
   "contact": "Contact Support",
   "language_support": "Multi-language Support",
@@ -76,5 +76,7 @@
   "conversion_failed": "File conversion failed",
   "file_conversion_failed_message": "The file conversion process failed. Please try again or contact support if the issue persists.",
   "file_ready_for_download": "Your file is ready for download!",
-  "preparing_conversion": "Preparing file for conversion..."
-} 
+  "preparing_conversion": "Preparing file for conversion...",
+  "dark": "Dark",
+  "light": "Light"
+}

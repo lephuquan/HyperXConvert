@@ -27,6 +27,7 @@ export default {
       },
       backgroundImage: {
         'cyber-gradient': 'linear-gradient(135deg, #00FFC6 0%, #5B00FF 100%)',
+        'cyber-hover': 'linear-gradient(135deg, #00FFC6, #FF00D4)',
       },
       textColor: {
         'logo-light': '#E5E7EB',

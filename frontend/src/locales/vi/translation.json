@@ -49,8 +49,8 @@
   "try_again": "Thử chuyển đổi lại",
   "error_details": "Chi tiết lỗi chuyển đổi (Dành cho phát triển)",
   "loading": "Đang tải bộ chuyển đổi...",
-  "home_page": "Trang Chủ",
-  "conversion_page": "Trang Chuyển Đổi File",
+  "reload_page": "Làm mới trang",
+  "choose_format": "Chọn định dạng",
   "language": "Chọn Ngôn Ngữ",
   "contact": "Liên Hệ Hỗ Trợ",
   "language_support": "Hỗ trợ đa ngôn ngữ",
@@ -76,5 +76,7 @@
   "conversion_failed": "Chuyển đổi file thất bại",
   "file_conversion_failed_message": "Quá trình chuyển đổi file thất bại. Vui lòng thử lại hoặc liên hệ hỗ trợ nếu sự cố tiếp tục.",
   "file_ready_for_download": "File của bạn đã sẵn sàng để tải về!",
-  "preparing_conversion": "Đang chuẩn bị file để chuyển đổi..."
-} 
+  "preparing_conversion": "Đang chuẩn bị file để chuyển đổi...",
+  "dark": "Tối",
+  "light": "Sáng"
+}
