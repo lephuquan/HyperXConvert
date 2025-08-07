@@ -200,7 +200,10 @@ const FileConverter: React.FC = () => {
         />
         {/* Nút Chuyển đổi - giờ sẽ xử lý cả upload và convert */}
         <button
-          className="mt-4 bg-blue-500 text-white font-semibold px-4 py-3 rounded-lg w-full hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-400 transition flex items-center justify-center"
+          className={`mt-4 px-4 py-3 font-medium rounded-lg w-full transition flex items-center justify-center 
+            ${selectedFile ? 'bg-cyber-gradient text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.6)] hover:bg-cyber-hover' : 'bg-white text-gray-700 hover:bg-gray-100'}
+            disabled:bg-gray-300 disabled:text-gray-400`
+          }
           onClick={onConvertClick}
           disabled={shouldDisableConvertButton}
         >
@@ -246,4 +249,4 @@ const FileConverter: React.FC = () => {
   );
 };
 
-export default FileConverter; 
+export default FileConverter;

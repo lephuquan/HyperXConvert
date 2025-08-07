@@ -185,7 +185,7 @@ public class FileManagementService {
         }
     }
 
-    public FileStatusResponse getFileStatus(String fileId) {
+    public FileStatusResponse getFileStatus(String fileId, java.util.Locale locale) {
         try {
             UUID uuid = UUID.fromString(fileId);
             File file = fileRepository.findById(uuid).orElseThrow(() -> new ApiException("FILE_NOT_FOUND", "error.file.not.found"));
@@ -206,12 +206,16 @@ public class FileManagementService {
             }
             
             // Add download URL for converted status
-            if (currentStatus != null && currentStatus == FileStatus.CONVERTED && file.getConvertedPath() != null) {
-                // Generate filename for download with original name + converted extension
-                FileFormat targetFormat = FileFormat.fromString(file.getFormatTo());
-                String extension = targetFormat != null ? targetFormat.getExtension() : file.getFormatTo().toLowerCase();
-                String downloadFilename = FilenameUtils.getFilenameWithExtension(file.getOriginalFilename(), extension);
-                
+            FileFormat targetFormat = null;
+            String extension = null;
+            if (currentStatus == FileStatus.CONVERTED && file.getConvertedPath() != null) {
+                targetFormat = FileFormat.fromString(file.getFormatTo());
+                extension = targetFormat != null ? targetFormat.getExtension() : file.getFormatTo().toLowerCase();
+                String action = "converted";
+                if (targetFormat == FileFormat.COMPRESSED_PDF || targetFormat == FileFormat.COMPRESSED_VIDEO) {
+                    action = "compressed";
+                }
+                String downloadFilename = FilenameUtils.getProcessedFilename(file.getOriginalFilename(), action, extension, locale);
                 String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), downloadFilename, presignedUrlExpiry);
                 response.setDownloadUrl(presignedUrl);
             }
@@ -239,7 +243,7 @@ public class FileManagementService {
         }
     }
 
-    public Map<String, Object> getDownloadUrl(String fileId) {
+    public Map<String, Object> getDownloadUrl(String fileId, java.util.Locale locale) {
         try {
             UUID uuid = UUID.fromString(fileId);
             File file = fileRepository.findById(uuid).orElseThrow(() -> new ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted"));
@@ -249,12 +253,14 @@ public class FileManagementService {
                 throw new ApiException("FILE_NOT_READY", "File does not exist or has not been successfully converted");
             }
             
-            // Generate filename for download with original name + converted extension
-            String originalFilename = file.getOriginalFilename();
+            // Generate filename for download with correct format (converted/compressed)
             FileFormat targetFormat = FileFormat.fromString(file.getFormatTo());
             String extension = targetFormat != null ? targetFormat.getExtension() : file.getFormatTo().toLowerCase();
-            String downloadFilename = FilenameUtils.getFilenameWithExtension(originalFilename, extension);
-            
+            String action = "converted";
+            if (targetFormat == FileFormat.COMPRESSED_PDF || targetFormat == FileFormat.COMPRESSED_VIDEO) {
+                action = "compressed";
+            }
+            String downloadFilename = FilenameUtils.getProcessedFilename(file.getOriginalFilename(), action, extension, locale);
             String presignedUrl = s3Service.generatePresignedDownloadUrl(file.getConvertedPath(), downloadFilename, presignedUrlExpiry);
             Map<String, Object> result = new HashMap<>();
             result.put("preSignedUrl", presignedUrl);
@@ -319,4 +325,4 @@ public class FileManagementService {
         return request.getRemoteAddr();
     }
 
-} 
+}
