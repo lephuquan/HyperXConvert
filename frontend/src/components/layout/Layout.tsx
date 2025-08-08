@@ -8,7 +8,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="container mx-auto px-4 min-h-screen flex flex-col bg-gradient-to-b from-slate-200 via-slate-100 to-white">
+    <div className="container mx-auto px-4 min-h-screen flex flex-col">
       {/* Header */}
       <Header />
 

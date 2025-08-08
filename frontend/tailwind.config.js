@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -31,6 +32,7 @@ export default {
       },
       textColor: {
         'logo-light': '#E5E7EB',
+        'logo-dark': '#1E293B',
         'logo-cyan': '#00FFC6',
         'logo-purple': '#5B00FF',
       },

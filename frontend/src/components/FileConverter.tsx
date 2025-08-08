@@ -158,95 +158,97 @@ const FileConverter: React.FC = () => {
      fileStatus !== FILE_STATUS.CONVERSION_FAILED);
 
   return (
-    <div className="max-w-md mx-auto p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-md mt-4">
-      <h1 className="text-2xl font-bold text-center mb-4">{t('upload_title')}</h1>
-      <div
-        {...(getRootProps() as DropzoneRootProps)}
-        className={`border-2 border-dashed p-6 sm:p-8 text-center rounded-lg cursor-pointer transition-colors duration-200 ${
-          isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50'
-        }`}
-      >
-        {/* Fix getInputProps typing issue by destructuring */}
-        {(() => {
-          const inputProps = getInputProps() as DropzoneInputProps;
-          const { refKey, ...rest } = inputProps;
-          return <input {...rest} />;
-        })()}
-        <p className="text-base sm:text-lg">
-          {isDragActive
-            ? t('drop_here')
-            : t('drag_drop_or_click')}
-        </p>
-        <p className="text-xs sm:text-sm text-gray-500 mt-2">
-          {t('supported_formats')}: {SUPPORTED_FORMATS.join(', ').toUpperCase()} ({t('max_file_size')})
-        </p>
-      </div>
-      {selectedFile && (
-        <div className="mt-4">
-          <p className="text-base sm:text-lg">
-            {t('selected_file')}: {selectedFile.name}
+    <div className="mt-4 max-w-md mx-auto p-[2px] bg-gradient-to-r from-[#00FFC6]/50 to-[#5B00FF]/50 rounded-lg shadow-md">
+      <div className="w-full sm:p-6 md:p-8 bg-white rounded-lg dark:bg-gray-200/95 dark:shadow-slate-300/40 dark:text-slate-900">
+        <h1 className="text-2xl font-bold text-center mb-4 dark:text-slate-900">{t('upload_title')}</h1>
+        <div
+          {...(getRootProps() as DropzoneRootProps)}
+          className={`border-2 border-dashed p-6 sm:p-8 text-center hover:bg-[linear-gradient(90deg,rgba(0,255,198,0.2)_0%,rgba(255,255,255,0.2)_50%,rgba(91,0,255,0.2)_100%)] rounded-lg cursor-pointer transition-colors duration-200 dark:text-slate-900 ${
+            isDragActive ? 'border-emerald-500 bg-[linear-gradient(90deg,rgba(0,255,198,0.2)_0%,rgba(255,255,255,0.2)_50%,rgba(91,0,255,0.2)_100%)]' : 'border-emerald-200 dark:border-gray-500 dark:bg-[#64748b]/5 bg-gray-50'
+          }`}
+        >
+          {/* Fix getInputProps typing issue by destructuring */}
+          {(() => {
+            const inputProps = getInputProps() as DropzoneInputProps;
+            const { refKey, ...rest } = inputProps;
+            return <input {...rest} />;
+          })()}
+          <p className="text-base sm:text-lg ">
+            {isDragActive
+              ? t('drop_here')
+              : t('drag_drop_or_click')}
+          </p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-2 dark:text-slate-900 ">
+            {t('supported_formats')}: {SUPPORTED_FORMATS.join(', ').toUpperCase()} ({t('max_file_size')})
           </p>
         </div>
-      )}
-      {uploadStatus === 'uploading' && (
-        <UploadProgress progress={uploadProgress} />
-      )}
-      <div className="mt-6">
-        {/* Component chọn định dạng chuyển đổi */}
-        <FormatSelector
-          fileExtension={fileExtension}
-          onFormatChange={setTargetFormat}
-          disabled={convertLoading || uploadStatus === 'uploading' || jobId !== null || (!!fileId && uploadStatus === 'completed')}
-        />
-        {/* Nút Chuyển đổi - giờ sẽ xử lý cả upload và convert */}
-        <button
-          className={`mt-4 px-4 py-3 font-medium rounded-lg w-full transition flex items-center justify-center 
+        {selectedFile && (
+          <div className="mt-4">
+            <p className="text-base sm:text-lg ">
+              {t('selected_file')}: {selectedFile.name}
+            </p>
+          </div>
+        )}
+        {uploadStatus === 'uploading' && (
+          <UploadProgress progress={uploadProgress} />
+        )}
+        <div className="mt-6">
+          {/* Component chọn định dạng chuyển đổi */}
+          <FormatSelector
+            fileExtension={fileExtension}
+            onFormatChange={setTargetFormat}
+            disabled={convertLoading || uploadStatus === 'uploading' || jobId !== null || (!!fileId && uploadStatus === 'completed')}
+          />
+          {/* Nút Chuyển đổi - giờ sẽ xử lý cả upload và convert */}
+          <button
+            className={`mt-4 px-4 py-3 font-medium rounded-lg w-full transition flex items-center justify-center 
             ${selectedFile ? 'bg-cyber-gradient text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.6)] hover:bg-cyber-hover' : 'bg-white text-gray-700 hover:bg-gray-100'}
             disabled:bg-gray-300 disabled:text-gray-400`
-          }
-          onClick={onConvertClick}
-          disabled={shouldDisableConvertButton}
-        >
-          {convertLoading || uploadStatus === 'uploading' ? (
-            <span className="flex items-center justify-center">
+            }
+            onClick={onConvertClick}
+            disabled={shouldDisableConvertButton}
+          >
+            {convertLoading || uploadStatus === 'uploading' ? (
+              <span className="flex items-center justify-center">
               <ClipLoader size={20} color="#fff" />
               <span className="ml-2">
                 {uploadStatus === 'uploading' ? t('uploading') : t('sending_request')}
               </span>
             </span>
-          ) : fileStatus === FILE_STATUS.CONVERTED ? (
-            t('convert_success')
-          ) : fileStatus === FILE_STATUS.VALIDATION_FAILED || fileStatus === FILE_STATUS.CONVERSION_FAILED ? (
-            t('convert_failed')
-          ) : jobId !== null || (!!fileId && uploadStatus === 'completed') ? (
-            t('converting')
-          ) : (
-            t('convert_btn')
-          )}
-        </button>
-        {/* Loader trạng thái xác thực file */}
-        {shouldShowStatusTracker && (
-          <div className="mt-6">
-            <FileStatusTracker
-              fileId={fileId}
-              onStatusChange={(status) => {
-                setFileStatus(status);
-                if (status === FILE_STATUS.CONVERTED || 
-                    status === FILE_STATUS.VALIDATION_FAILED || 
+            ) : fileStatus === FILE_STATUS.CONVERTED ? (
+              t('convert_success')
+            ) : fileStatus === FILE_STATUS.VALIDATION_FAILED || fileStatus === FILE_STATUS.CONVERSION_FAILED ? (
+              t('convert_failed')
+            ) : jobId !== null || (!!fileId && uploadStatus === 'completed') ? (
+              t('converting')
+            ) : (
+              t('convert_btn')
+            )}
+          </button>
+          {/* Loader trạng thái xác thực file */}
+          {shouldShowStatusTracker && (
+            <div className="mt-6">
+              <FileStatusTracker
+                fileId={fileId}
+                onStatusChange={(status) => {
+                  setFileStatus(status);
+                  if (status === FILE_STATUS.CONVERTED ||
+                    status === FILE_STATUS.VALIDATION_FAILED ||
                     status === FILE_STATUS.CONVERSION_FAILED) {
-                  setConvertStatus(status);
-                  // Reset convertLoading khi có kết quả cuối cùng
-                  resetConvertLoading();
-                }
-              }}
-            />
-          </div>
-        )}
+                    setConvertStatus(status);
+                    // Reset convertLoading khi có kết quả cuối cùng
+                    resetConvertLoading();
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
+        {/* Hiển thị mọi lỗi qua ErrorMessage */}
+        {errorToShow && <ErrorMessage message={errorToShow} />}
       </div>
-      {/* Hiển thị mọi lỗi qua ErrorMessage */}
-      {errorToShow && <ErrorMessage message={errorToShow} />}
     </div>
-  );
+    );
 };
 
 export default FileConverter;
