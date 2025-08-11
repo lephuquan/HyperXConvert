@@ -29,13 +29,28 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="card max-w-md mx-4 text-center">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <div className="text-red-500 text-6xl mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                className="lucide lucide-circle-x-icon lucide-circle-x"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="m15 9-6 6" />
+                <path d="m9 9 6 6" />
+              </svg>
+            </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               {t('error_title')}
             </h2>
-            <p className="text-gray-600 mb-6">
-              {t('error_message')}
-            </p>
+            <p className="text-gray-600 mb-6">{t('error_message')}</p>
             <div className="space-y-3">
               <button
                 onClick={() => window.location.reload()}
@@ -44,7 +59,9 @@ class ErrorBoundary extends Component<Props, State> {
                 {t('refresh_page')}
               </button>
               <button
-                onClick={() => this.setState({ hasError: false, error: undefined })}
+                onClick={() =>
+                  this.setState({ hasError: false, error: undefined })
+                }
                 className="btn-secondary w-full"
               >
                 {t('try_again')}

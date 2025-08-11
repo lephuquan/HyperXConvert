@@ -39,7 +39,7 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
   // Nếu không có fileExtension hoặc không có định dạng hợp lệ
   if (!fileExtension || options.length === 0) {
     return (
-      <div className="mt-4 text-sm dark:text-slate-900 text-gray-500 text-center">
+      <div className="mt-4 text-sm dark:text-gray-300 text-gray-500 text-center">
         {t('upload_valid_file_to_select_format')}
       </div>
     );
@@ -47,12 +47,15 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
 
   return (
     <div className="mt-4 w-full relative" ref={dropdownRef}>
-      <label htmlFor="format-select" className="block mb-2 text-base font-medium text-gray-700">
+      <label htmlFor="format-select" className="block mb-2 text-base font-medium text-gray-700 dark:text-gray-300">
         {t('select_target_format_label')}
       </label>
       <button
         type="button"
-        className="block w-full px-4 py-3 text-base border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 transition disabled:bg-gray-100 disabled:text-gray-400 shadow-lg focus:shadow-cyber animate-fade-in appearance-none bg-white dark:bg-gray-900/90 text-gray-900 dark:text-gray-100 text-left flex items-center justify-between"
+        className={`block w-full px-4 py-3 text-base border border-gray-300 rounded-3xl focus:outline-none focus:ring-1 focus:ring-cyan-400 focus:border-cyan-400 transition shadow-lg focus:shadow-cyber animate-fade-in appearance-none text-left flex items-center justify-between
+          ${disabled ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-gray-900/90 text-gray-900 dark:text-gray-300'}
+          ${fileExtension && !selectedFormat && !disabled ? 'animate-border-cyan' : ''}
+        `}
         onClick={() => setIsOpen((prev) => !prev)}
         disabled={disabled}
         aria-haspopup="listbox"
@@ -68,7 +71,7 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
         </svg>
       </button>
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-1 z-50 bg-gray-200 dark:bg-gray-800 border border-cyan-300 dark:border-gray-700 rounded-2xl shadow-lg animate-fade-in overflow-hidden">
+        <div className="absolute left-0 right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-cyan-300 dark:border-gray-700 rounded-2xl shadow-lg animate-fade-in overflow-hidden">
           <ul tabIndex={-1} role="listbox">
             {options.map((opt, idx) => (
               <li

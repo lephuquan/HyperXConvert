@@ -10,7 +10,7 @@ export default function ThemeToggle() {
       {!isDark && (
         <button
           type="button"
-          className="transition-all duration-300 ease-in-out bg-cyan-300 hover:bg-cyan-200 text-gray-900 flex items-center gap-x-2 py-2 px-3 rounded-full text-sm font-medium font-sans shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 animate-fade-in"
+          className="bg-[linear-gradient(135deg,#7FFFE0_0%,#B27FFF_100%)] hover:bg-[linear-gradient(135deg,#A4FFF0_0%,#D0B2FF_100%)] transition duration-300 text-black  transition-all duration-300 ease-in-out flex items-center gap-x-2 py-2 px-3 rounded-full text-sm font-medium font-sans shadow focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 animate-fade-in"
           aria-pressed={!isDark}
           onClick={() => setIsDark(true)}
         >
@@ -23,7 +23,7 @@ export default function ThemeToggle() {
       {isDark && (
         <button
           type="button"
-          className="transition-all duration-300 ease-in-out bg-white/10 text-white flex items-center gap-x-2 py-2 px-3 rounded-full text-sm font-medium font-sans shadow hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-primary-500 animate-fade-in"
+          className="transition-all duration-300 ease-in-out bg-white/10 text-white flex items-center gap-x-2 py-2 px-3 rounded-full text-sm font-medium font-sans shadow hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 animate-fade-in"
           aria-pressed={isDark}
           onClick={() => setIsDark(false)}
         >

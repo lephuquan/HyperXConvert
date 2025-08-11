@@ -13,7 +13,7 @@ const UploadProgress: React.FC<UploadProgressProps> = ({ progress }) => {
       <p>{t('uploading')}</p>
       <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
         <div
-          className="bg-blue-600 h-2.5 rounded-full transition-all duration-200"
+          className="bg-cyber-gradient h-2.5 rounded-full transition-all duration-200"
           style={{ width: `${progress}%` }}
         ></div>
       </div>

@@ -159,11 +159,11 @@ const FileConverter: React.FC = () => {
 
   return (
     <div className="mt-4 max-w-md mx-auto p-[2px] bg-gradient-to-r from-[#00FFC6]/50 to-[#5B00FF]/50 rounded-lg shadow-md">
-      <div className="w-full sm:p-6 md:p-8 bg-white rounded-lg dark:bg-gray-200/95 dark:shadow-slate-300/40 dark:text-slate-900">
-        <h1 className="text-2xl font-bold text-center mb-4 dark:text-slate-900">{t('upload_title')}</h1>
+      <div className="lg:w-full p-[1rem] sm:p-6 md:p-8 bg-white rounded-lg dark:bg-black dark:shadow-slate-300/40 dark:text-white">
+        <h1 className="text-2xl font-bold text-center mb-4 dark:text-gray-300">{t('upload_title')}</h1>
         <div
           {...(getRootProps() as DropzoneRootProps)}
-          className={`border-2 border-dashed p-6 sm:p-8 text-center hover:bg-[linear-gradient(90deg,rgba(0,255,198,0.2)_0%,rgba(255,255,255,0.2)_50%,rgba(91,0,255,0.2)_100%)] rounded-lg cursor-pointer transition-colors duration-200 dark:text-slate-900 ${
+          className={`border-2 border-dashed p-6 sm:p-8 text-center hover:bg-[linear-gradient(90deg,rgba(0,255,198,0.2)_0%,rgba(255,255,255,0.2)_50%,rgba(91,0,255,0.2)_100%)] rounded-lg cursor-pointer transition-colors duration-200 dark:text-gray-300 ${
             isDragActive ? 'border-emerald-500 bg-[linear-gradient(90deg,rgba(0,255,198,0.2)_0%,rgba(255,255,255,0.2)_50%,rgba(91,0,255,0.2)_100%)]' : 'border-emerald-200 dark:border-gray-500 dark:bg-[#64748b]/5 bg-gray-50'
           }`}
         >
@@ -178,7 +178,7 @@ const FileConverter: React.FC = () => {
               ? t('drop_here')
               : t('drag_drop_or_click')}
           </p>
-          <p className="text-xs sm:text-sm text-gray-500 mt-2 dark:text-slate-900 ">
+          <p className="text-xs sm:text-sm text-gray-500 mt-2 dark:text-gray-300">
             {t('supported_formats')}: {SUPPORTED_FORMATS.join(', ').toUpperCase()} ({t('max_file_size')})
           </p>
         </div>
@@ -201,12 +201,13 @@ const FileConverter: React.FC = () => {
           />
           {/* Nút Chuyển đổi - giờ sẽ xử lý cả upload và convert */}
           <button
-            className={`mt-4 px-4 py-3 font-medium rounded-lg w-full transition flex items-center justify-center 
-            ${selectedFile ? 'bg-cyber-gradient text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.6)] hover:bg-cyber-hover' : 'bg-white text-gray-700 hover:bg-gray-100'}
-            disabled:bg-gray-300 disabled:text-gray-400`
-            }
+            className={`mt-4 px-4 py-3 font-medium rounded-lg w-full transition flex items-center justify-center
+              ${selectedFile && targetFormat && fileStatus !== FILE_STATUS.CONVERTED
+                ? 'bg-cyber-gradient hover:bg-cyber-hover text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.6)] dark:drop-shadow-[0_0_6px_rgb(9_242_29/30%)]'
+                : 'bg-gray-300 dark:bg-gray-900 text-gray-400 cursor-not-allowed'}
+            `}
             onClick={onConvertClick}
-            disabled={shouldDisableConvertButton}
+            disabled={shouldDisableConvertButton || fileStatus === FILE_STATUS.CONVERTED}
           >
             {convertLoading || uploadStatus === 'uploading' ? (
               <span className="flex items-center justify-center">
