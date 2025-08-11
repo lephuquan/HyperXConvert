@@ -239,7 +239,7 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({
   }, [fileId, fetchStatus]);
 
   return (
-    <div className="w-full max-w-md mx-auto p-4 sm:p-6 dark:bg-[#64748b]/5 bg-gray-50 rounded-lg shadow-md mt-4 flex flex-col items-center">
+    <div className="w-full max-w-md mx-auto p-4 sm:p-6 dark:bg-[rgb(104_189_185/58%)] bg-gray-50 rounded-lg shadow-md mt-4 flex flex-col items-center">
       <StatusContent status={status} loading={loading} fileId={fileId} />
       {!loading && error && (
         <div className="flex flex-col items-center mt-4">
