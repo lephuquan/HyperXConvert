@@ -44,7 +44,7 @@ const LanguageSelector: React.FC = () => {
              {/* Selected Language Button */}
        <button
          onClick={() => setIsOpen(!isOpen)}
-         className="flex items-center h-[25px] md:h-[30px] space-x-2 bg-gray-800 border-1 border-gray-600 rounded-3xl px-3 py-1.5 text-sm font-medium text-gray-200 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 transition-colors"
+         className="flex items-center h-[25px] md:h-[30px] bg-[linear-gradient(135deg,#7FFFE0_0%,#B27FFF_100%)] hover:bg-[linear-gradient(135deg,#A4FFF0_0%,#D0B2FF_100%)] transition duration-300 text-black transition-all duration-300 ease-in-out space-x-2 dark:bg-gray-800 border-1 border-gray-600 rounded-3xl px-3 py-1.5 text-sm font-medium dark:text-gray-200 dark:hover:bg-gray-700 dark:bg-none focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 transition-colors"
        >
         <img 
           src={currentLanguage.flagUrl} 
@@ -53,7 +53,7 @@ const LanguageSelector: React.FC = () => {
         />
         <span>{currentLanguage.label}</span>
         <svg 
-          className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          className={`h-4 w-4  text-black dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -64,15 +64,16 @@ const LanguageSelector: React.FC = () => {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-[9rem] bg-gray-800 border border-gray-600 rounded-xl shadow-lg z-50 overflow-hidden">
+        <div className="absolute right-0 mt-1 w-[9rem] bg-gray-100 border-1 hover:bg-neutral-200 dark:bg-gray-800  border dark:border-gray-600 rounded-xl shadow-lg z-50 overflow-hidden">
           {languages.map((language) => (
             <button
               key={language.value}
               onClick={() => handleLanguageChange(language.value)}
               className={`w-full flex items-center px-1 py-1 text-sm font-medium transition-colors ${
                 language.value === i18n.language
-                  ? 'bg-cyan-900/30 text-cyan-300 border-l-4 border-cyan-400'
-                  : 'text-gray-200 hover:bg-gray-700 border-l-4 border-gray-800'
+                  ? 'bg-cyan-100 text-cyan-700 border-l-4 border-cyan-400 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-400'
+                  : 'text-gray-700 hover:bg-gray-200 border-l-4 border-gray-300 dark:text-gray-200 dark:hover:bg-gray-700 dark:border-gray-800'
+
               }`}
             >
               <img 

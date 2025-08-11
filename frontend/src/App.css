@@ -1,0 +1,10 @@
+@keyframes borderCyanPulse {
+  0%, 100% { border-color: #164E63; } /* cyan-400 */
+  50% { border-color: #22d3ee; }      /* cyan-100 */
+}
+.animate-border-cyan {
+  animation: borderCyanPulse 1.2s infinite;
+  border-width: 2px;
+  border-style: solid;
+}
+

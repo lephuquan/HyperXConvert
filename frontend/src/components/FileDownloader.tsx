@@ -53,7 +53,7 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = ''
   return (
     <div className={`w-full flex flex-col items-center ${className}`}>
       <button
-        className="bg-blue-500 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-600 transition text-base font-medium w-full max-w-xs disabled:bg-gray-400 disabled:cursor-not-allowed"
+        className=" text-white px-6 py-2 rounded-lg shadow hover:bg-cyber-hover bg-cyber-gradient transition text-base font-medium w-full max-w-xs disabled:bg-gray-400 disabled:cursor-not-allowed"
         onClick={handleDownload}
         disabled={loading}
       >
