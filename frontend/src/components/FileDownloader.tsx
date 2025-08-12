@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from '../api/api';
 import Loading from './ui/Loading';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-toastify';
 
 interface FileDownloaderProps {
   fileId: string;
@@ -39,13 +40,17 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = ''
       if (err.response) {
         if (err.response.status === 404) {
           setError(t('file_not_found'));
+          toast.error(t('file_not_found'));
         } else if (err.response.status === 500) {
           setError(t('download_server_error'));
+          toast.error(t('download_server_error'));
         } else {
           setError(t('download_error'));
+          toast.error(t('download_error'));
         }
       } else {
         setError(t('cannot_connect_server'));
+        toast.error(t('cannot_connect_server'));
       }
     }
   };
@@ -66,4 +71,4 @@ const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = ''
   );
 };
 
-export default FileDownloader; 
+export default FileDownloader;

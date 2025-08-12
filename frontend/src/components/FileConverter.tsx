@@ -11,6 +11,7 @@ import UploadProgress from './UploadProgress';
 import ErrorMessage from './ErrorMessage';
 import { FileStatus } from '../types/file';
 import axios from '../api/api';
+import { toast } from 'react-toastify';
 
 const ACCEPT_MIME: Record<string, string[]> = {
   'application/pdf': ['.pdf'],
@@ -20,7 +21,11 @@ const ACCEPT_MIME: Record<string, string[]> = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
 };
 
-const FileConverter: React.FC = () => {
+interface FileConverterProps {
+  onUserInteract?: () => void;
+}
+
+const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract }) => {
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileExtension, setFileExtension] = useState<string | null>(null);
@@ -75,14 +80,14 @@ const FileConverter: React.FC = () => {
       const file = acceptedFiles[0];
       if (file) {
         if (!validateFile(file)) {
-          resetAll(); // clear các state liên quan nếu có file lỗi
+          resetAll();
           return;
         }
         resetAll();
         setSelectedFile(file);
         setFileExtension(file.name.split('.').pop()?.toLowerCase() || null);
-        // Google Analytics event
         ReactGA.event({ category: 'File', action: 'Upload', label: file.name });
+        onUserInteract?.(); // Notify parent of user interaction
       }
     },
     multiple: false,
@@ -125,6 +130,7 @@ const FileConverter: React.FC = () => {
             msg = error.response.data.message;
           }
           setLocalErrorMessage(msg);
+          toast.error(msg);
         }
       }
     };

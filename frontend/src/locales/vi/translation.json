@@ -48,6 +48,8 @@
   "refresh_page": "Tải lại trang chuyển đổi",
   "try_again": "Thử chuyển đổi lại",
   "error_details": "Chi tiết lỗi chuyển đổi (Dành cho phát triển)",
+  "nothingToRefresh": "Không có gì để làm mới",
+  "refreshed": "Đã làm mới",
   "loading": "Đang tải bộ chuyển đổi...",
   "reload_page": "Làm mới trang",
   "choose_format": "Chọn định dạng",
@@ -78,5 +80,7 @@
   "file_ready_for_download": "File của bạn đã sẵn sàng để tải về!",
   "preparing_conversion": "Đang chuẩn bị file để chuyển đổi...",
   "dark": "Tối",
-  "light": "Sáng"
+  "light": "Sáng",
+  "file_converted_successfully": "File đã chuyển đổi thành công!",
+  "fetch_status_error": "Không thể lấy trạng thái file. Vui lòng thử lại."
 }
