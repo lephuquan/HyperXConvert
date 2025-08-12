@@ -49,7 +49,7 @@
   "try_again": "Try conversion again",
   "error_details": "Conversion error details (For development)",
   "loading": "Loading converter...",
-  "reload_page": "Reload page",
+  "reload_page": "Refresh conversion",
   "choose_format": "Choose format",
   "language": "Select Language",
   "contact": "Contact Support",
