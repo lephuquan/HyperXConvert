@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import LanguageSelector from '../ui/LanguageSelector';
 import ThemeToggle from '../ui/ThemeToggle';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onReloadFileConverter?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onReloadFileConverter }) => {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -29,6 +33,7 @@ const Header: React.FC = () => {
           <path d="M19 15.57c-1.804.885-4.274 1.43-7 1.43-5.523 0-10-2.239-10-5s4.477-5 10-5c4.838 0 8.873 1.718 9.8 4" />
         </svg>
       ),
+      onClick: undefined,
     },
     {
       name: t('reload_page'),
@@ -49,6 +54,7 @@ const Header: React.FC = () => {
           />
         </svg>
       ),
+      onClick: onReloadFileConverter,
     },
   ];
 
@@ -93,6 +99,7 @@ const Header: React.FC = () => {
                   key={link.name}
                   href={link.href}
                   className="hover:text-black text-gray-700  dark:text-gray-300 dark:hover:text-white px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center gap-2"
+                  onClick={link.onClick ? (e) => { e.preventDefault(); link.onClick?.(); } : undefined}
                 >
                   {link.icon}
                   {link.name}
@@ -141,7 +148,13 @@ const Header: React.FC = () => {
                   key={link.name}
                   href={link.href}
                   className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center gap-3 dark:text-white dark:hover:text-primary-300"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={(e) => {
+                    setMenuOpen(false);
+                    if (link.onClick) {
+                      e.preventDefault();
+                      link.onClick();
+                    }
+                  }}
                 >
                   {link.icon}
                   {link.name}
