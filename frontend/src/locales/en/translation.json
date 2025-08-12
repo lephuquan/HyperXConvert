@@ -48,6 +48,8 @@
   "refresh_page": "Refresh converter page",
   "try_again": "Try conversion again",
   "error_details": "Conversion error details (For development)",
+  "nothingToRefresh": "Nothing to refresh",
+  "refreshed": "Refreshed",
   "loading": "Loading converter...",
   "reload_page": "Refresh conversion",
   "choose_format": "Choose format",
@@ -78,5 +80,7 @@
   "file_ready_for_download": "Your file is ready for download!",
   "preparing_conversion": "Preparing file for conversion...",
   "dark": "Dark",
-  "light": "Light"
-} 
+  "light": "Light",
+  "file_converted_successfully": "File converted successfully!",
+  "fetch_status_error": "Could not fetch file status. Please try again."
+}

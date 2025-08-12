@@ -81,7 +81,7 @@ export function useFileConvert(): UseFileConvertResult {
       setUploadStatus('completed');
       setFileId(uploadedFileId);
       setConvertStatus(FILE_STATUS.UPLOADED);
-      toast.success(t('upload_success', 'File uploaded successfully!'));
+      toast.info(t('upload_success', 'File uploaded successfully!'));
       return uploadedFileId;
     } catch (error: any) {
       setUploadStatus('error');

@@ -99,7 +99,14 @@ const Header: React.FC<HeaderProps> = ({ onReloadFileConverter }) => {
                   key={link.name}
                   href={link.href}
                   className="hover:text-black text-gray-700  dark:text-gray-300 dark:hover:text-white px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center gap-2"
-                  onClick={link.onClick ? (e) => { e.preventDefault(); link.onClick?.(); } : undefined}
+                  onClick={
+                    link.onClick
+                      ? (e) => {
+                          e.preventDefault();
+                          link.onClick?.();
+                        }
+                      : undefined
+                  }
                 >
                   {link.icon}
                   {link.name}
@@ -141,8 +148,13 @@ const Header: React.FC<HeaderProps> = ({ onReloadFileConverter }) => {
         </div>
         {/* Mobile Nav Drawer */}
         {menuOpen && (
-          <div className="lg:hidden absolute mt-1 top-full left-0 right-0 bg-gradient-to-b from-slate-200 via-slate-100 to-white border-cyan-400 border rounded-2xl lg:rounded-b-[50px] shadow-sm animate-fade-in-down z-40 dark:bg-[rgb(100,116,139)]">
-            <nav className="flex flex-col px-4 py-2 space-y-1">
+          <div className="lg:hidden absolute mt-1 top-full left-0 right-0 bg-gradient-to-b from-slate-200 via-slate-100 to-white border-cyan-400 border rounded-2xl lg:rounded-b-[50px] shadow-sm animate-fade-in-down z-40 dark:bg-none dark:bg-[rgb(100,116,139)]">
+            {/* Overlay to close menu when clicking outside */}
+            <div
+              className="fixed inset-0 z-30 bg-transparent"
+              onClick={() => setMenuOpen(false)}
+            />
+            <nav className="flex flex-col px-4 py-2 space-y-1 relative z-40">
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.name}

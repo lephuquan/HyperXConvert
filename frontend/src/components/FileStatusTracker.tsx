@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import axios from '../api/api';
 import Loading from './ui/Loading';
 import FileDownloader from './FileDownloader';
+import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { FileStatus, StatusResponse } from '../types/file';
 import { FILE_STATUS } from '../constants/file';
@@ -194,6 +195,7 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const prevStatusRef = useRef<FileStatus | null>(null);
 
   const clearPolling = () => {
     if (pollingRef.current) {
@@ -209,8 +211,18 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({
       setStatus(res.data.status);
       if (onStatusChange) onStatusChange(res.data.status);
       setLoading(false);
-      
-      // Dừng polling khi đạt trạng thái cuối cùng
+      // Only show toast when status transitions to CONVERTED
+      if (
+        res.data.status === FILE_STATUS.CONVERTED && prevStatusRef.current !== FILE_STATUS.CONVERTED
+      ) {
+        toast.success(t('file_converted_successfully'));
+      } else if (
+        res.data.status === FILE_STATUS.CONVERSION_FAILED ||
+        res.data.status === FILE_STATUS.VALIDATION_FAILED
+      ) {
+        toast.error(t('convert_failed'));
+      }
+      prevStatusRef.current = res.data.status;
       if (
         res.data.status === FILE_STATUS.CONVERTED ||
         res.data.status === FILE_STATUS.CONVERSION_FAILED ||
@@ -223,9 +235,10 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({
       setStatus(null);
       if (onStatusChange) onStatusChange(null);
       setError(getErrorMessage(err));
+      toast.error(t('fetch_status_error'));
       clearPolling();
     }
-  }, [fileId, onStatusChange]);
+  }, [fileId, onStatusChange, t]);
 
   useEffect(() => {
     setLoading(true);
