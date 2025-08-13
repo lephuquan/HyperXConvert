@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import axios from '../api/api';
 import Loading from './ui/Loading';
 import FileDownloader from './FileDownloader';
-import { toast } from 'react-toastify';
+import { useCustomToast } from './toast';
 import { useTranslation } from 'react-i18next';
 import { FileStatus, StatusResponse } from '../types/file';
 import { FILE_STATUS } from '../constants/file';
@@ -191,6 +191,7 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({
   onStatusChange,
 }) => {
   const { t } = useTranslation();
+  const toast = useCustomToast(); // Sử dụng custom toast hook
   const [status, setStatus] = useState<FileStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);

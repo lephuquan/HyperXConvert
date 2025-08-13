@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from '../api/api';
-import { toast } from 'react-toastify';
+import { useCustomToast } from '../components/toast';
 import { useTranslation } from 'react-i18next';
 import { ERROR_MESSAGES, SUPPORTED_FORMATS, MAX_FILE_SIZE, FILE_STATUS } from '../constants/file';
 import { UploadUrlResponse, FileStatus } from '../types/file';
@@ -21,6 +21,7 @@ export interface UseFileConvertResult {
 
 export function useFileConvert(): UseFileConvertResult {
   const { t } = useTranslation();
+  const toast = useCustomToast(); // Sử dụng custom toast hook
   const [convertLoading, setConvertLoading] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [convertStatus, setConvertStatus] = useState<FileStatus | null>(null);
@@ -161,4 +162,4 @@ export function useFileConvert(): UseFileConvertResult {
     setConvertStatus,
     resetConvertLoading,
   };
-} 
+}

@@ -11,7 +11,7 @@ import UploadProgress from './UploadProgress';
 import ErrorMessage from './ErrorMessage';
 import { FileStatus } from '../types/file';
 import axios from '../api/api';
-import { toast } from 'react-toastify';
+import { useCustomToast } from './toast';
 
 const ACCEPT_MIME: Record<string, string[]> = {
   'application/pdf': ['.pdf'],
@@ -27,6 +27,7 @@ interface FileConverterProps {
 
 const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract }) => {
   const { t } = useTranslation();
+  const toast = useCustomToast(); // Sử dụng custom toast hook
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileExtension, setFileExtension] = useState<string | null>(null);
   const [targetFormat, setTargetFormat] = useState<string | null>(null);
@@ -130,6 +131,7 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract }) => {
             msg = error.response.data.message;
           }
           setLocalErrorMessage(msg);
+          // Sử dụng toast từ hệ thống toast tùy chỉnh
           toast.error(msg);
         }
       }

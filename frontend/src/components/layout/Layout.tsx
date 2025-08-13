@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import Header from './Header';
 import Footer from './Footer';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import './custom-toast.css';
+import { useCustomToast, ToastContainer } from '../toast';
 import FileConverter from '../FileConverter';
-import useDarkMode from '../../hooks/useDarkMode';
 import { useTranslation } from 'react-i18next';
 
 interface LayoutProps {
@@ -13,25 +10,22 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-
   const { t } = useTranslation();
   // Add key state to force FileConverter remount
   const [fileConverterKey, setFileConverterKey] = useState(0);
   // Track if FileConverter is already reset
   const [isFileConverterReset, setIsFileConverterReset] = useState(true);
-  const [isDark] = useDarkMode();
+  const toast = useCustomToast();
 
   // Handler to reload FileConverter
   const handleReloadFileConverter = () => {
     if (isFileConverterReset) {
-      toast.info(t('nothingToRefresh'), {
-      });
+      toast.info(t('nothingToRefresh'));
       return;
     }
     setFileConverterKey((prev) => prev + 1);
     setIsFileConverterReset(true);
-    toast.success(t('refreshed'), {
-    });
+    toast.success(t('refreshed'));
   };
 
   // Detect if FileConverter is not reset (i.e., user interacted)
@@ -51,25 +45,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="container mx-auto px-4 min-h-screen flex flex-col">
-
       {/* Header */}
       <Header onReloadFileConverter={handleReloadFileConverter} />
 
       {/* Toast Notifications */}
       <div className="2xl:w-[1200px] 2xl:mx-auto sticky mt-3 z-30">
-        <div className="w-full absolute">
-          <ToastContainer
-            className="custom-toast-container"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick={false}
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme={isDark ? 'dark' : 'light'}
-          />
+        <div className="w-full absolute flex justify-end">
+          <ToastContainer className="top-and-bottom-none"/>
         </div>
       </div>
 
@@ -80,7 +62,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Footer */}
       <Footer />
-
     </div>
   );
 };
