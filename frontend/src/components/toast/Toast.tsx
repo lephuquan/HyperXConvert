@@ -16,6 +16,7 @@ const Toast: React.FC<ToastComponentProps> = ({
   const [isExiting, setIsExiting] = useState(false);
   const [progress, setProgress] = useState(100);
   const [isPaused, setIsPaused] = useState(false);
+  const [isMounted, setIsMounted] = useState(false); // Thêm state để biết toast vừa mount
   const startTimeRef = useRef<number | null>(null);
   const remainingTimeRef = useRef<number | null>(null);
   // const animationRef = useRef<number | null>(null);
@@ -168,14 +169,20 @@ const Toast: React.FC<ToastComponentProps> = ({
     // Không reset startTimeRef ở đây, sẽ được xử lý trong useEffect
   };
 
+  // Thêm effect để set isMounted về true khi toast được mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
     <div
-      className={`flex flex-col w-full max-w-xs md:max-w-md p-4 pl-2 mb-4 ${getBackgroundColor()} ${getTextColor()} rounded-lg shadow transition-opacity duration-300 ease-in-out relative ${
-        isExiting ? 'opacity-0 translate-x-full' : 'opacity-100'
-      }`}
+      className={`flex flex-col w-full max-w-xs md:max-w-md p-4 pl-2 mb-4 ${getBackgroundColor()} ${getTextColor()} rounded-lg shadow transition-all duration-300 ease-in-out relative 
+        ${isExiting ? 'opacity-0 translate-x-8 pointer-events-none' : isMounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}
+      `}
       role="alert"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      style={{ willChange: 'opacity, transform' }}
     >
       <div className="flex items-start">
         <div className="flex-shrink-0 w-4">{getIcon()}</div>
