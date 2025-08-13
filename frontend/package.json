@@ -24,8 +24,7 @@
     "react-ga4": "^2.1.0",
     "react-i18next": "^15.6.0",
     "react-router-dom": "^6.8.1",
-    "react-spinners": "^0.17.0",
-    "react-toastify": "^11.0.5"
+    "react-spinners": "^0.17.0"
   },
   "devDependencies": {
     "@types/node": "^18.15.0",

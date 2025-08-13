@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from '../api/api';
 import Loading from './ui/Loading';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'react-toastify';
+import { useCustomToast } from './toast';
 
 interface FileDownloaderProps {
   fileId: string;
@@ -12,6 +12,7 @@ interface FileDownloaderProps {
 
 const FileDownloader: React.FC<FileDownloaderProps> = ({ fileId, buttonText = '', className = '' }) => {
   const { t } = useTranslation();
+  const toast = useCustomToast(); // Sử dụng custom toast hook đúng cách
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
