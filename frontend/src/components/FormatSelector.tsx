@@ -100,7 +100,7 @@ const FormatSelector: React.FC<FormatSelectorProps> = ({ fileExtension, onFormat
       {isOpen && (
         <div className="absolute left-0 right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-cyan-300 dark:border-gray-700 rounded-2xl shadow-lg animate-fade-in overflow-hidden">
           <ul tabIndex={-1} role="listbox">
-            {options.map((option, idx) => (
+            {options.map((option) => (
               <li
                 key={option.value}
                 className={`px-4 py-2 cursor-pointer hover:bg-cyan-100 dark:hover:bg-cyan-900/40 ${selectedFormat === option.value ? 'bg-cyan-100 dark:bg-cyan-900/40 font-bold' : ''}`}

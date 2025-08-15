@@ -42,7 +42,7 @@ const FormatList: React.FC<FormatListProps> = ({ onFormatSelect, selectedFormat 
         List of conversion formats
       </div>
       <ul className="rounded-box shadow-lg max-h-80 overflow-y-auto custom-scrollbar border border-gray-300 p-1 rounded-md">
-        {allOptions.map((item, idx) => (
+        {allOptions.map((item) => (
           <li
             key={`${item.from}-${item.value}`}
             className={`grid grid-cols-12 gap-2 border border-gray-800 rounded-md shadow-md mb-2 ${selectedFormat && selectedFormat.from === item.from && selectedFormat.to === item.value ? 'ring-2 ring-blue-400' : ''}`}

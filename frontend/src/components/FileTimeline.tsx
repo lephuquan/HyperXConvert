@@ -135,7 +135,7 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
 
   return (
     <div className="flex flex-col w-full mt-4">
-      {steps.map((step, idx) => {
+      {steps.map((_, idx) => {
         if (idx > currentStep) return null;
 
         const { label, labelClass, dotClass, icon } = getStepProps(idx);
