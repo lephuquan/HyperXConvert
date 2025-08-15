@@ -82,5 +82,14 @@
   "dark": "Dark",
   "light": "Light",
   "file_converted_successfully": "File converted successfully!",
-  "fetch_status_error": "Could not fetch file status. Please try again."
+  "fetch_status_error": "Could not fetch file status. Please try again.",
+  "file_is_ready": "File is ready",
+  "no_files_yet": "No files yet",
+  "uploading_file_label": "Uploading...",
+  "validating_file_label": "Validating...",
+  "converting_file_label": "Converting...",
+  "uploaded_file_label": "Uploaded",
+  "validated_file_label": "Validated",
+  "converted_file_label": "Conversion successful",
+  "invalid_file_format": "File format must is .{{format}}"
 }

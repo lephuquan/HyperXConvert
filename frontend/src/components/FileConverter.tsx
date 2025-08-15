@@ -23,9 +23,11 @@ const ACCEPT_MIME: Record<string, string[]> = {
 
 interface FileConverterProps {
   onUserInteract?: () => void;
+  onTimelineStateChange?: (state: { selectedFile: File | null; uploadStatus: string; fileStatus: string | null }) => void;
+  selectedFormat?: { from: string; to: string } | null;
 }
 
-const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract }) => {
+const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelineStateChange, selectedFormat }) => {
   const { t } = useTranslation();
   const toast = useCustomToast(); // Sử dụng custom toast hook
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -33,6 +35,9 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract }) => {
   const [targetFormat, setTargetFormat] = useState<string | null>(null);
   const [fileStatus, setFileStatus] = useState<FileStatus | null>(null);
   const [localErrorMessage, setLocalErrorMessage] = useState<string>('');
+
+  // State để kiểm soát toast lỗi file sai định dạng
+  const [hasShownInvalidFormatToast, setHasShownInvalidFormatToast] = useState(false);
 
   // Custom hooks - chỉ sử dụng useFileConvert mới
   const {
@@ -58,9 +63,32 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract }) => {
     resetConvert();
   };
 
+  useEffect(() => {
+    if (selectedFormat) {
+      setFileExtension(selectedFormat.from);
+      setTargetFormat(selectedFormat.to);
+      setSelectedFile(null);
+    }
+  }, [selectedFormat]);
+
+  // Reset toast khi đổi format hoặc file
+  useEffect(() => {
+    setHasShownInvalidFormatToast(false);
+  }, [selectedFormat, selectedFile]);
+
   // Validate file (dùng chung cho onDrop)
   const validateFile = (file: File): boolean => {
     const extension = file.name.split('.').pop()?.toLowerCase();
+    // Nếu đã chọn format, chỉ nhận đúng định dạng from
+    if (selectedFormat && extension !== selectedFormat.from.toLowerCase()) {
+      const msg = t('invalid_file_format', { format: selectedFormat.from });
+      setLocalErrorMessage(msg);
+      if (!hasShownInvalidFormatToast) {
+        toast.error(msg);
+        setHasShownInvalidFormatToast(true);
+      }
+      return false;
+    }
     if (!extension || !SUPPORTED_FORMATS.includes(extension as any)) {
       const msg = t('unsupported_format');
       setLocalErrorMessage(msg);
@@ -165,6 +193,17 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract }) => {
     (fileStatus !== FILE_STATUS.VALIDATION_FAILED && 
      fileStatus !== FILE_STATUS.CONVERSION_FAILED);
 
+  // Notify timeline state on any relevant change
+  useEffect(() => {
+    if (onTimelineStateChange) {
+      onTimelineStateChange({
+        selectedFile,
+        uploadStatus,
+        fileStatus,
+      });
+    }
+  }, [selectedFile, uploadStatus, fileStatus, onTimelineStateChange]);
+
   return (
     <div className="mt-4 max-w-md mx-auto p-[2px] bg-gradient-to-r from-[#00FFC6]/50 to-[#5B00FF]/50 rounded-lg shadow-md">
       <div className="lg:w-full p-[1rem] sm:p-6 md:p-8 bg-white rounded-lg dark:bg-black dark:shadow-slate-300/40 dark:text-white">
@@ -206,6 +245,7 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract }) => {
             fileExtension={fileExtension}
             onFormatChange={setTargetFormat}
             disabled={convertLoading || uploadStatus === 'uploading' || jobId !== null || (!!fileId && uploadStatus === 'completed')}
+            value={targetFormat} // Truyền targetFormat vào prop value
           />
           {/* Nút Chuyển đổi - giờ sẽ xử lý cả upload và convert */}
           <button

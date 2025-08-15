@@ -82,5 +82,14 @@
   "dark": "Tối",
   "light": "Sáng",
   "file_converted_successfully": "File đã chuyển đổi thành công!",
-  "fetch_status_error": "Không thể lấy trạng thái file. Vui lòng thử lại."
+  "fetch_status_error": "Không thể lấy trạng thái file. Vui lòng thử lại.",
+  "file_is_ready": "File đã sẵn sàng",
+  "no_files_yet": "Chưa có file nào",
+  "uploading_file_label": "Đang tải lên...",
+  "validating_file_label": "Đang xác thực...",
+  "converting_file_label": "Đang chuyển đổi...",
+  "uploaded_file_label": "Đã tải lên",
+  "validated_file_label": "Đã xác thực",
+  "converted_file_label": "Chuyển đổi thành công",
+  "invalid_file_format": "Định dạng file phải là .{{format}}"
 }
