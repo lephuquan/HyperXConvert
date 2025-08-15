@@ -91,5 +91,6 @@
   "uploaded_file_label": "Đã tải lên",
   "validated_file_label": "Đã xác thực",
   "converted_file_label": "Chuyển đổi thành công",
-  "invalid_file_format": "Định dạng file phải là .{{format}}"
+  "invalid_file_format": "Định dạng file phải là .{{format}}",
+  "disabled_cause_processing_conversion": "Đang chuyển đổi file, không thể chọn"
 }

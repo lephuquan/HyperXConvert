@@ -51,6 +51,15 @@ const Layout: React.FC<LayoutProps> = () => {
     setFileConverterKey(prev => prev + 1);
   };
 
+  const handleForceReloadAndSelect = (from: string, to: string) => {
+    handleReloadFileConverter({ force: true });
+    // Đợi FileConverter reset xong mới chọn format (setTimeout để đảm bảo state cập nhật)
+    setTimeout(() => {
+      setSelectedFormat({ from, to });
+      setIsFileConverterReset(false);
+    }, 0);
+  };
+
   return (
     <div className="container mx-auto px-4 min-h-screen flex flex-col">
       {/* Header */}
@@ -68,7 +77,12 @@ const Layout: React.FC<LayoutProps> = () => {
         <div className="flex flex-col lg:flex-row gap-8 items-stretch">
           {/* SongList section - only on desktop */}
           <div className="hidden lg:block w-full lg:w-[260px] xl:w-[300px] 2xl:w-[320px]">
-            <FormatList onFormatSelect={handleFormatSelect} selectedFormat={selectedFormat} />
+            <FormatList
+              onFormatSelect={handleFormatSelect}
+              selectedFormat={selectedFormat}
+              fileStatus={fileStatus}
+              onForceReloadAndSelect={handleForceReloadAndSelect}
+            />
           </div>
           <div>
             <FileConverter

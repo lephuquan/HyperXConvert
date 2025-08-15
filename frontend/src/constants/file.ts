@@ -13,17 +13,6 @@ export const FILE_STATUS = {
   CONVERTED: 'CONVERTED',
 } as const;
 
-// Mapping status để hiển thị UI
-export const STATUS_DISPLAY_MAP = {
-  [FILE_STATUS.UPLOADED]: 'uploaded',
-  [FILE_STATUS.VALIDATING]: 'validating',
-  [FILE_STATUS.VALIDATION_FAILED]: 'validation_failed',
-  [FILE_STATUS.VALIDATED]: 'validated',
-  [FILE_STATUS.CONVERTING]: 'converting',
-  [FILE_STATUS.CONVERSION_FAILED]: 'conversion_failed',
-  [FILE_STATUS.CONVERTED]: 'converted',
-} as const;
-
 export const ERROR_MESSAGES = {
   invalidResponse: 'invalid_response',
   convertError: 'convert_error',

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FaRegFileWord } from 'react-icons/fa';
 import { BsFiletypePdf } from 'react-icons/bs';
 import { FaRegFileZipper } from 'react-icons/fa6';
@@ -27,14 +28,28 @@ const getIcon = (format: string) => {
 interface FormatListProps {
   onFormatSelect?: (from: string, to: string) => void;
   selectedFormat?: { from: string; to: string } | null;
+  fileStatus?: string | null; // Thêm prop này để nhận trạng thái file
+  onForceReloadAndSelect?: (from: string, to: string) => void; // callback khi cần reload rồi mới chọn format
 }
 
-const FormatList: React.FC<FormatListProps> = ({ onFormatSelect, selectedFormat }) => {
+const FormatList: React.FC<FormatListProps> = ({ onFormatSelect, selectedFormat, fileStatus, onForceReloadAndSelect }) => {
   const { t } = useTranslation();
   // Flatten all conversion options into a single array
   const allOptions = SUPPORTED_FORMATS.flatMap((from) =>
     (formatOptionsMap[from] || []).map((option) => ({ from, ...option }))
   );
+
+  // Các status không cho chọn (trừ CONVERTED)
+  const blockStatuses = [
+    'UPLOADED',
+    'VALIDATING',
+    'VALIDATION_FAILED',
+    'VALIDATED',
+    'CONVERTING',
+    'CONVERSION_FAILED',
+  ];
+
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   return (
     <div className="mt-4">
@@ -46,6 +61,16 @@ const FormatList: React.FC<FormatListProps> = ({ onFormatSelect, selectedFormat 
           <li
             key={`${item.from}-${item.value}`}
             className={`grid grid-cols-12 gap-2 border border-gray-800 dark:border-gray-100 rounded-md shadow-md mb-2 ${selectedFormat && selectedFormat.from === item.from && selectedFormat.to === item.value ? 'ring-2 ring-blue-400' : ''}`}
+            onMouseEnter={(e) => {
+              if (fileStatus && blockStatuses.includes(fileStatus)) {
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                setPos({
+                  top: rect.top - 30,
+                  left: rect.left + rect.width / 2,
+                });
+              }
+            }}
+            onMouseLeave={() => setPos(null)}
           >
             <div className="grid grid-rows-2 col-span-9 justify-items-center items-center">
               <div className="grid grid-cols-3 gap-x-2 pt-1">
@@ -72,9 +97,21 @@ const FormatList: React.FC<FormatListProps> = ({ onFormatSelect, selectedFormat 
               <div className="text-xs font-semibold dark:text-gray-300 text-gray-800">{t(item.label)}</div>
             </div>
             <button
-              className="btn btn-square btn-ghost col-span-3 justify-items-center border-l border-gray-800 dark:border-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-700"
-              onClick={() => onFormatSelect?.(item.from, item.value)}
+              className={
+                `relative group btn btn-square btn-ghost col-span-3 justify-items-center border-l border-gray-800 dark:border-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-700 disabled:cursor-not-allowed`
+              }
+              onClick={(e) => {
+                if (fileStatus === 'CONVERTED' && onForceReloadAndSelect) {
+                    onForceReloadAndSelect(item.from, item.value);
+                  return;
+                }
+                if (fileStatus && blockStatuses.includes(fileStatus)) {
+                  return;
+                }
+                onFormatSelect?.(item.from, item.value);
+              }}
               aria-label={`Select ${item.label}`}
+              disabled={fileStatus && blockStatuses.includes(fileStatus)}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -92,6 +129,23 @@ const FormatList: React.FC<FormatListProps> = ({ onFormatSelect, selectedFormat 
                 <path d="m10 8 4 4-4 4" />
               </svg>
             </button>
+            {/* Tooltip dùng portal */}
+            {pos && fileStatus && blockStatuses.includes(fileStatus) &&
+              createPortal(
+                <div
+                  style={{
+                    position: "fixed",
+                    top: pos.top,
+                    left: pos.left,
+                    transform: "translateX(-50%)",
+                    zIndex: 9999,
+                  }}
+                  className="px-2 py-1 text-xs text-gray-800 bg-yellow-200 rounded shadow-lg whitespace-nowrap"
+                >
+                  {t('disabled_cause_processing_conversion')}
+                </div>,
+                document.body
+              )}
           </li>
         ))}
       </ul>
