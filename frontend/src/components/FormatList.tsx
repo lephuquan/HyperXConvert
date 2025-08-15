@@ -72,7 +72,7 @@ const FormatList: React.FC<FormatListProps> = ({ onFormatSelect, selectedFormat,
             }}
             onMouseLeave={() => setPos(null)}
           >
-            <div className="grid grid-rows-2 col-span-9 justify-items-center items-center">
+            <div className="grid p-1 grid-rows-2 col-span-9 justify-items-center items-center">
               <div className="grid grid-cols-3 gap-x-2 pt-1">
                 <div className="col-span-1">{getIcon(item.from)}</div>
                 <div className="col-span-1">
@@ -94,13 +94,13 @@ const FormatList: React.FC<FormatListProps> = ({ onFormatSelect, selectedFormat,
                 </div>
                 <div className="col-span-1">{getIcon(item.value)}</div>
               </div>
-              <div className="text-xs font-semibold dark:text-gray-300 text-gray-800">{t(item.label)}</div>
+              <div className="text-xs text-center font-semibold dark:text-gray-300 text-gray-800">{t(item.label)}</div>
             </div>
             <button
               className={
                 `relative group btn btn-square btn-ghost col-span-3 justify-items-center border-l border-gray-800 dark:border-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-700 disabled:cursor-not-allowed`
               }
-              onClick={(e) => {
+              onClick={() => {
                 if (fileStatus === 'CONVERTED' && onForceReloadAndSelect) {
                     onForceReloadAndSelect(item.from, item.value);
                   return;
@@ -111,7 +111,7 @@ const FormatList: React.FC<FormatListProps> = ({ onFormatSelect, selectedFormat,
                 onFormatSelect?.(item.from, item.value);
               }}
               aria-label={`Select ${item.label}`}
-              disabled={fileStatus && blockStatuses.includes(fileStatus)}
+              disabled={!!fileStatus && blockStatuses.includes(fileStatus)}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
