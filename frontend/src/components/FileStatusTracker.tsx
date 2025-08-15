@@ -96,9 +96,9 @@ const StatusContent: React.FC<{ status: FileStatus | null; loading: boolean; fil
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className="lucide lucide-circle-x-icon lucide-circle-x"
             >
               <circle cx="12" cy="12" r="10" />
@@ -136,9 +136,9 @@ const StatusContent: React.FC<{ status: FileStatus | null; loading: boolean; fil
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className="lucide lucide-circle-x-icon lucide-circle-x"
             >
               <circle cx="12" cy="12" r="10" />
@@ -163,9 +163,9 @@ const StatusContent: React.FC<{ status: FileStatus | null; loading: boolean; fil
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className="lucide lucide-circle-check-icon lucide-circle-check"
             >
               <circle cx="12" cy="12" r="10" />
@@ -265,9 +265,9 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className="lucide lucide-circle-alert-icon lucide-circle-alert"
             >
               <circle cx="12" cy="12" r="10" />

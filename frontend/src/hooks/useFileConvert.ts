@@ -63,7 +63,7 @@ export function useFileConvert(): UseFileConvertResult {
       const { uploadUrl, fileId: uploadedFileId } = uploadResponse.data;
 
       if (!uploadUrl) {
-        toast.error(t('no_upload_url', 'Không lấy được uploadUrl từ backend!'));
+        toast.error(t('no_upload_url'));
         setUploadStatus('error');
         return null;
       }
