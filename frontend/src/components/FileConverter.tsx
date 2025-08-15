@@ -67,10 +67,13 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelin
   const resetAll = () => {
     setSelectedFile(null);
     setFileExtension(null);
-    setTargetFormat(null);
     setFileStatus(null);
     setLocalErrorMessage('');
     resetConvert();
+    // Chỉ reset targetFormat nếu selectedFormat là null
+    if (!selectedFormat) {
+      setTargetFormat(null);
+    }
   };
 
   // Reset state khi resetTrigger thay đổi
