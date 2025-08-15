@@ -25,9 +25,11 @@ interface FileConverterProps {
   onUserInteract?: () => void;
   onTimelineStateChange?: (state: { selectedFile: File | null; uploadStatus: string; fileStatus: string | null }) => void;
   selectedFormat?: { from: string; to: string } | null;
+  resetTrigger?: number;
+  onReset?: (opts?: { force?: boolean }) => void; // Sửa lại kiểu cho phép truyền opts
 }
 
-const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelineStateChange, selectedFormat }) => {
+const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelineStateChange, selectedFormat, resetTrigger, onReset }) => {
   const { t } = useTranslation();
   const toast = useCustomToast(); // Sử dụng custom toast hook
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -53,7 +55,15 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelin
     resetConvertLoading,
   } = useFileConvert();
 
-  // Reset tất cả state liên quan khi chọn file mới
+  // Reset chỉ file, status, error (KHÔNG reset fileExtension, targetFormat)
+  const resetFileOnly = () => {
+    setSelectedFile(null);
+    setFileStatus(null);
+    setLocalErrorMessage('');
+    resetConvert();
+  };
+
+  // Reset tất cả state liên quan khi chọn file mới hoặc đổi format
   const resetAll = () => {
     setSelectedFile(null);
     setFileExtension(null);
@@ -63,13 +73,32 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelin
     resetConvert();
   };
 
+  // Reset state khi resetTrigger thay đổi
+  React.useEffect(() => {
+    setSelectedFile(null);
+    setFileExtension(null);
+    setTargetFormat(null);
+    setFileStatus(null);
+    setLocalErrorMessage('');
+    setHasShownInvalidFormatToast(false);
+  }, [resetTrigger]);
+
+  // Luôn đồng bộ selectedFormat, nhưng nếu resetTrigger vừa thay đổi thì bỏ qua effect này
+  const prevResetTrigger = React.useRef(resetTrigger);
   useEffect(() => {
+    if (prevResetTrigger.current !== resetTrigger) {
+      prevResetTrigger.current = resetTrigger;
+      return;
+    }
     if (selectedFormat) {
       setFileExtension(selectedFormat.from);
       setTargetFormat(selectedFormat.to);
       setSelectedFile(null);
+    } else {
+      setFileExtension(null);
+      setTargetFormat(null);
     }
-  }, [selectedFormat]);
+  }, [selectedFormat, resetTrigger]);
 
   // Reset toast khi đổi format hoặc file
   useEffect(() => {
@@ -87,16 +116,22 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelin
         toast.error(msg);
         setHasShownInvalidFormatToast(true);
       }
+      // Gọi hàm onReset với opts.force=true để không hiện toast.info khi reset do lỗi
+      if (typeof onReset === 'function') {
+        onReset({ force: true });
+      }
       return false;
     }
     if (!extension || !SUPPORTED_FORMATS.includes(extension as any)) {
       const msg = t('unsupported_format');
       setLocalErrorMessage(msg);
+      toast.error(msg);
       return false;
     }
     if (file.size > MAX_FILE_SIZE) {
       const msg = t('file_too_large');
       setLocalErrorMessage(msg);
+      toast.error(msg);
       return false;
     }
     setLocalErrorMessage('');
@@ -109,18 +144,18 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelin
       const file = acceptedFiles[0];
       if (file) {
         if (!validateFile(file)) {
-          resetAll();
+          resetFileOnly();
           return;
         }
         resetAll();
         setSelectedFile(file);
         setFileExtension(file.name.split('.').pop()?.toLowerCase() || null);
         ReactGA.event({ category: 'File', action: 'Upload', label: file.name });
-        onUserInteract?.(); // Notify parent of user interaction
+        onUserInteract?.();
       }
     },
     multiple: false,
-    accept: ACCEPT_MIME,
+    accept: ACCEPT_MIME
   });
 
   // Handler for convert button - giờ sẽ xử lý cả upload và convert
@@ -218,7 +253,7 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelin
           {(() => {
             const inputProps = getInputProps() as DropzoneInputProps;
             const { refKey, ...rest } = inputProps;
-            return <input {...rest} />;
+            return <input {...rest} onChange={e => { if (rest.onChange) rest.onChange(e); }} />;
           })()}
           <p className="text-base sm:text-lg ">
             {isDragActive
@@ -241,12 +276,14 @@ const FileConverter: React.FC<FileConverterProps> = ({ onUserInteract, onTimelin
         )}
         <div className="mt-6">
           {/* Component chọn định dạng chuyển đổi */}
-          <FormatSelector
-            fileExtension={fileExtension}
-            onFormatChange={setTargetFormat}
-            disabled={convertLoading || uploadStatus === 'uploading' || jobId !== null || (!!fileId && uploadStatus === 'completed')}
-            value={targetFormat} // Truyền targetFormat vào prop value
-          />
+          {fileExtension && (
+            <FormatSelector
+              fileExtension={fileExtension}
+              onFormatChange={setTargetFormat}
+              disabled={convertLoading || uploadStatus === 'uploading' || jobId !== null || (!!fileId && uploadStatus === 'completed')}
+              value={targetFormat} // Truyền targetFormat vào prop value
+            />
+          )}
           {/* Nút Chuyển đổi - giờ sẽ xử lý cả upload và convert */}
           <button
             className={`mt-4 px-4 py-3 font-medium rounded-lg w-full transition flex items-center justify-center

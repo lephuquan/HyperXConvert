@@ -26,24 +26,29 @@ const Layout: React.FC<LayoutProps> = () => {
 
   // --- Format selection state ---
   const [selectedFormat, setSelectedFormat] = useState<{ from: string; to: string } | null>(null);
+  const [resetTrigger, setResetTrigger] = useState(0); // Thêm trigger reset
 
   const handleFormatSelect = (from: string, to: string) => {
     setSelectedFormat({ from, to });
+    setIsFileConverterReset(false); // Cho phép reload lại
   };
 
   // Handler to reload FileConverter
-  const handleReloadFileConverter = () => {
-    if (isFileConverterReset) {
+  const handleReloadFileConverter = (opts?: { force?: boolean }) => {
+    if (!opts?.force && isFileConverterReset) {
       toast.info(t('nothingToRefresh'));
       return;
     }
-    setFileConverterKey((prev) => prev + 1);
     setIsFileConverterReset(true);
-    toast.success(t('refreshed'));
-    // Reset timeline state
+    if (!opts?.force) {
+      toast.success(t('refreshed'));
+    }
     setSelectedFile(null);
     setUploadStatus('idle');
     setFileStatus(null);
+    setSelectedFormat(null);
+    setResetTrigger(prev => prev + 1);
+    setFileConverterKey(prev => prev + 1);
   };
 
   return (
@@ -75,6 +80,8 @@ const Layout: React.FC<LayoutProps> = () => {
                 setFileStatus(state.fileStatus);
               }}
               selectedFormat={selectedFormat}
+              resetTrigger={resetTrigger}
+              onReset={(opts) => handleReloadFileConverter(opts)}
             />
           </div>
           <div className="w-full lg:w-[340px] xl:w-[380px] 2xl:w-[400px]">
