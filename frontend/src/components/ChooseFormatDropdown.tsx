@@ -101,7 +101,7 @@ const ChooseFormatDropdown: React.FC<ChooseFormatDropdownProps> = ({
     <div
       ref={dropdownRef}
       style={dropdownStyle}
-      className="max-h-[70vh] mt-14 sm:mt-15 lg:mt-2 bg-white dark:bg-gray-900 bg-opacity-90 items-center justify-center border border-gray-300 dark:border-gray-700 rounded-2xl shadow-xl animate-fade-in-down"
+      className="max-h-[70vh] mt-14 sm:mt-15 lg:mt-2 bg-white dark:bg-gray-600 border-1 border-emerald-300 items-center justify-center border rounded-2xl shadow-xl animate-fade-in-down"
     >
       <ul className="grid grid-cols-[repeat(auto-fit,minmax(150px,0.5fr))] justify-items-center sm:justify-items-stretch sm:grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-1 gap-y-3 sm:gap-3 p-1 my-2 sm:p-3 bg-transparent border-0">
         {allOptions.map((item) => {
