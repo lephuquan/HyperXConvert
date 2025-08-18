@@ -51,21 +51,25 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
 
     // Thêm "..." khi loading và không phải dot đầu tiên
     if (isActive && idx > 0) {
-      if (baseStep.key === "uploaded") displayLabel = t("uploading_file_label");
-      if (baseStep.key === "validate") displayLabel = t("validating_file_label");
-      if (baseStep.key === "convert") displayLabel = t("converting_file_label");
+      if (baseStep.key === 'uploaded') displayLabel = t('uploading_file_label');
+      if (baseStep.key === 'validate')
+        displayLabel = t('validating_file_label');
+      if (baseStep.key === 'convert') displayLabel = t('converting_file_label');
     }
-
 
     switch (idx) {
       case 0:
         return {
-          label: hasFile ? t("file_is_ready") : t("no_files_yet"),
-          labelClass: hasFile ? "text-green-500" : "text-gray-700 dark:text-gray-300",
-          dotClass: hasFile ? "border-green-500" : "dark:border-green-300 border-green-600 bg-cyber-gradient",
+          label: hasFile ? t('file_is_ready') : t('no_files_yet'),
+          labelClass: hasFile
+            ? 'text-green-500'
+            : 'text-gray-700 dark:text-gray-300',
+          dotClass: hasFile
+            ? 'border-green-500'
+            : 'dark:border-green-300 border-green-600 bg-cyber-gradient',
           icon: (
             <svg
-              className={hasFile ? "text-green-500" : "text-gray-800"}
+              className={hasFile ? 'text-green-500' : 'text-gray-800'}
               width="12"
               height="12"
               viewBox="0 0 24 24"
@@ -84,15 +88,15 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
         return {
           label: displayLabel,
           labelClass: isDone
-            ? "text-green-500"
+            ? 'text-green-500'
             : isActive
-              ? "text-green-300 dark:text-green-300"
-              : "text-gray-400",
+            ? 'text-green-300 dark:text-green-300'
+            : 'text-gray-400',
           dotClass: isDone
-            ? "border-green-500"
+            ? 'border-green-500'
             : isActive
-              ? "border-gray-300"
-              : "border-gray-300",
+            ? 'border-gray-300'
+            : 'border-gray-300',
           icon: isDone ? (
             <svg
               className="text-green-500"
@@ -169,16 +173,17 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
                 {icon}
               </div>
             </div>
-
             {/*-------Label-------*/}
             <div className="flex flex-col justify-center items-center text-center mr-4">
               {/* Line ảo */}
               {idx > 0 && <div className={`w-0.5 flex-1`}></div>}
               {/* Label */}
-              <div
-                className={`flex-shrink-0 flex items-center justify-center`}
-              >
-                <span className={`text-sm font-bold dark:font-normal  ${labelClass}`}>{label}</span>
+              <div className={`flex-shrink-0 flex items-center justify-center`}>
+                <span
+                  className={`text-sm font-bold dark:font-normal  ${labelClass}`}
+                >
+                  {label}
+                </span>
               </div>
             </div>
           </div>
