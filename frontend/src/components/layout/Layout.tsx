@@ -83,6 +83,7 @@ const Layout: React.FC<LayoutProps> = () => {
         anchorRef={headerRef}
         onClose={() => setChooseFormatOpen(false)}
         selectedFormat={selectedFormat}
+        fileStatus={fileStatus}
         onFormatSelect={(from, to) => {
           setSelectedFormat({ from, to });
           setChooseFormatOpen(false);
