@@ -6,6 +6,7 @@ import FileConverter from '../FileConverter';
 import { useTranslation } from 'react-i18next';
 import FileTimeline from '../FileTimeline';
 import FormatList from '../FormatList';
+import ChooseFormatDropdown from '../ChooseFormatDropdown';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -25,8 +26,15 @@ const Layout: React.FC<LayoutProps> = () => {
   const [fileStatus, setFileStatus] = useState<string | null>(null);
 
   // --- Format selection state ---
-  const [selectedFormat, setSelectedFormat] = useState<{ from: string; to: string } | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
   const [resetTrigger, setResetTrigger] = useState(0); // Thêm trigger reset
+
+  // Dropdown state & header ref
+  const [chooseFormatOpen, setChooseFormatOpen] = useState(false);
+  const headerRef = React.useRef<HTMLElement>(null);
 
   const handleFormatSelect = (from: string, to: string) => {
     setSelectedFormat({ from, to });
@@ -47,8 +55,8 @@ const Layout: React.FC<LayoutProps> = () => {
     setUploadStatus('idle');
     setFileStatus(null);
     setSelectedFormat(null);
-    setResetTrigger(prev => prev + 1);
-    setFileConverterKey(prev => prev + 1);
+    setResetTrigger((prev) => prev + 1);
+    setFileConverterKey((prev) => prev + 1);
   };
 
   const handleForceReloadAndSelect = (from: string, to: string) => {
@@ -63,12 +71,27 @@ const Layout: React.FC<LayoutProps> = () => {
   return (
     <div className="container mx-auto px-4 min-h-screen flex flex-col">
       {/* Header */}
-      <Header onReloadFileConverter={handleReloadFileConverter} />
-
+      <Header
+        onReloadFileConverter={handleReloadFileConverter}
+        onOpenChooseFormat={() => setChooseFormatOpen((v) => !v)}
+        headerRef={headerRef}
+        chooseFormatOpen={chooseFormatOpen}
+      />
+      {/* ChooseFormatDropdown đặt ngay dưới Header */}
+      <ChooseFormatDropdown
+        open={chooseFormatOpen}
+        anchorRef={headerRef}
+        onClose={() => setChooseFormatOpen(false)}
+        selectedFormat={selectedFormat}
+        onFormatSelect={(from, to) => {
+          setSelectedFormat({ from, to });
+          setChooseFormatOpen(false);
+        }}
+      />
       {/* Toast Notifications */}
       <div className="2xl:w-[1200px] 2xl:mx-auto sticky mt-10 z-30">
         <div className="w-full absolute flex justify-end">
-          <ToastContainer className="top-and-bottom-none"/>
+          <ToastContainer className="top-and-bottom-none" />
         </div>
       </div>
 
@@ -88,7 +111,11 @@ const Layout: React.FC<LayoutProps> = () => {
             <FileConverter
               key={fileConverterKey}
               onUserInteract={() => setIsFileConverterReset(false)}
-              onTimelineStateChange={(state: { selectedFile: File | null; uploadStatus: string; fileStatus: string | null }) => {
+              onTimelineStateChange={(state: {
+                selectedFile: File | null;
+                uploadStatus: string;
+                fileStatus: string | null;
+              }) => {
                 setSelectedFile(state.selectedFile);
                 setUploadStatus(state.uploadStatus);
                 setFileStatus(state.fileStatus);
