@@ -24,6 +24,7 @@ const Layout: React.FC<LayoutProps> = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string>('idle');
   const [fileStatus, setFileStatus] = useState<string | null>(null);
+  const [fileId, setFileId] = useState<string | null>(null); // Track fileId
 
   // --- Format selection state ---
   const [selectedFormat, setSelectedFormat] = useState<{
@@ -99,7 +100,7 @@ const Layout: React.FC<LayoutProps> = () => {
       {/* Main Content: Flex row for FileConverter + Timeline */}
       <main className="flex-1 2xl:w-[1200px] 2xl:mx-auto px-2 sm:px-6 lg:px-8 py-6 sm:py-10">
         <div className="flex flex-col lg:flex-row gap-8 items-stretch">
-          {/* SongList section - only on desktop */}
+          {/* FormatList section - only on desktop */}
           <div className="hidden lg:block w-full lg:w-[260px] xl:w-[300px] 2xl:w-[320px]">
             <FormatList
               onFormatSelect={handleFormatSelect}
@@ -124,17 +125,23 @@ const Layout: React.FC<LayoutProps> = () => {
               selectedFormat={selectedFormat}
               resetTrigger={resetTrigger}
               onReset={(opts) => handleReloadFileConverter(opts)}
+              onFileIdChange={(id) => setFileId(id)} // Update fileId when it changes
             />
           </div>
-          <div className="w-full lg:w-[340px] xl:w-[380px] 2xl:w-[400px]">
+          <div className="flex-col flex w-full max-h-[500px] lg:w-[340px] xl:w-[380px] 2xl:w-[400px]">
             {/* Timeline section */}
             {/* Only render on desktop (lg+) */}
-            <div className="hidden lg:block">
+            <div className="hidden lg:block flex-1 items-center justify-center">
               <FileTimeline
                 status={fileStatus as any}
                 hasFile={!!selectedFile}
                 isUploading={uploadStatus === 'uploading'}
+                fileId={fileId} // Pass fileId to FileTimeline
               />
+            </div>
+
+            <div className="hidden lg:block flex-1 items-center justify-center">
+              --
             </div>
           </div>
         </div>

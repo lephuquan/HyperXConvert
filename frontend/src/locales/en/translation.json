@@ -92,5 +92,6 @@
   "validated_file_label": "Validated",
   "converted_file_label": "Conversion successful",
   "invalid_file_format": "File format must is .{{format}}",
-  "disabled_cause_processing_conversion": "Converting file, cannot select"
+  "disabled_cause_processing_conversion": "Converting file, cannot select",
+  "download_file": "Download File"
 }
