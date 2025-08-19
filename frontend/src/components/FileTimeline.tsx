@@ -1,20 +1,27 @@
 import React from 'react';
 import { FileStatus } from '../types/file';
 import { useTranslation } from 'react-i18next';
+import axios from '../api/api';
+import { useCustomToast } from './toast';
 
 export interface FileTimelineProps {
   status: FileStatus | null;
   hasFile: boolean;
   isUploading: boolean;
+  fileId?: string | null; // Allow null for fileId
 }
 
 const FileTimeline: React.FC<FileTimelineProps> = ({
   status,
   hasFile,
   isUploading,
+  fileId, // Destructure fileId prop
 }) => {
-
   const { t } = useTranslation();
+  const toast = useCustomToast(); // Move useCustomToast here
+  const [convertedFilename, setConvertedFilename] = React.useState<
+    string | null
+  >(null); // State to store converted filename
 
   const steps = [
     { key: '', label: '' }, //Đánh dấu dot đầu tiên không có label - chưa tối ưu
@@ -137,6 +144,51 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
     }
   };
 
+  const handleDownloadClick = async (fileId: string) => {
+    try {
+      const res = await axios.get(`/file/download/${fileId}`);
+
+      const preSignedUrl = res.data?.preSignedUrl || res.data?.downloadUrl;
+
+      if (!preSignedUrl) {
+        toast.error(t('no_download_link'));
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = preSignedUrl;
+      link.setAttribute('download', '');
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        toast.error(t('file_not_found'));
+      } else {
+        toast.error(t('download_error'));
+      }
+    }
+  };
+
+  // Fetch converted filename when status is CONVERTED and fileId is available
+  React.useEffect(() => {
+    const fetchConvertedFilename = async () => {
+      if (status === 'CONVERTED' && fileId) {
+        try {
+          const res = await axios.get(`/file/status/${fileId}`);
+          setConvertedFilename(res.data?.convertedFilename || null);
+        } catch (err) {
+          setConvertedFilename(null);
+        }
+      } else {
+        setConvertedFilename(null);
+      }
+    };
+    fetchConvertedFilename();
+    // Only run when status or fileId changes
+  }, [status, fileId]);
+
   return (
     <div className="flex flex-col w-full mt-4">
       {steps.map((_, idx) => {
@@ -189,6 +241,19 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
           </div>
         );
       })}
+      {status === 'CONVERTED' && (
+        <div className="mt-4 flex items-center gap-4 w-full">
+          <button
+            className="px-2 h-8 py-3 min-w-[6rem] font-medium text-sm text-white bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 rounded-full shadow-lg shadow-green-500/50 hover:scale-105 transform transition-transform duration-300 ease-in-out hover:shadow-purple-500/50 flex items-center justify-center"
+            onClick={() => handleDownloadClick(fileId || '')} // Use fileId prop
+          >
+            <span className="text-sm break-words"> {t('download_file')}</span>
+          </button>
+          <span className="text-sm break-words text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 max-w-full overflow-hidden text-ellipsis">
+            {convertedFilename || t('no_download_link')}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
