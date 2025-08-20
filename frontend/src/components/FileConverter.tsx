@@ -42,6 +42,8 @@ interface FileConverterProps {
   resetTrigger?: number;
   onReset?: (opts?: { force?: boolean }) => void; // Sửa lại kiểu cho phép truyền opts
   onFileIdChange?: (fileId: string | null) => void; // Thêm prop onFileIdChange
+  onFileInfoChange?: (info: { ext: string; size: string } | null) => void; // Thêm prop onFileInfoChange
+  onCompletedTimeChange?: (time: string) => void; // Thêm prop này
 }
 
 const FileConverter: React.FC<FileConverterProps> = ({
@@ -51,6 +53,8 @@ const FileConverter: React.FC<FileConverterProps> = ({
   resetTrigger,
   onReset,
   onFileIdChange,
+  onFileInfoChange,
+  onCompletedTimeChange,
 }) => {
   const { t } = useTranslation();
   const toast = useCustomToast(); // Sử dụng custom toast hook
@@ -84,6 +88,8 @@ const FileConverter: React.FC<FileConverterProps> = ({
     setFileStatus(null);
     setLocalErrorMessage('');
     resetConvert();
+    setCompletedTime('--');
+    if (onCompletedTimeChange) onCompletedTimeChange('--');
   };
 
   // Reset tất cả state liên quan khi chọn file mới hoặc đổi format
@@ -93,6 +99,8 @@ const FileConverter: React.FC<FileConverterProps> = ({
     setFileStatus(null);
     setLocalErrorMessage('');
     resetConvert();
+    setCompletedTime('--');
+    if (onCompletedTimeChange) onCompletedTimeChange('--');
     // Chỉ reset targetFormat nếu selectedFormat là null
     if (!selectedFormat) {
       setTargetFormat(null);
@@ -119,7 +127,6 @@ const FileConverter: React.FC<FileConverterProps> = ({
     if (selectedFormat) {
       setFileExtension(selectedFormat.from);
       setTargetFormat(selectedFormat.to);
-      setSelectedFile(null);
     } else {
       setFileExtension(null);
       setTargetFormat(null);
@@ -164,6 +171,41 @@ const FileConverter: React.FC<FileConverterProps> = ({
     return true;
   };
 
+  // Helper to format file size
+  const formatFileSize = (size: number) => {
+    if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + ' MB';
+    if (size >= 1024) return (size / 1024).toFixed(2) + ' KB';
+    return size + ' B';
+  };
+
+  // State for file info to pass to ConversionInfoTable
+  const [fileInfo, setFileInfo] = useState<{
+    ext: string;
+    size: string;
+  } | null>(null);
+
+  // Timer for conversion duration
+  const [convertTimer, setConvertTimer] = useState<number>(0); // seconds
+  const convertTimerRef = React.useRef<number>(0); // always holds latest value
+  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(
+    null
+  );
+  const [completedTime, setCompletedTime] = useState<string>('-- s');
+
+  // Update ref whenever timer changes
+  useEffect(() => {
+    convertTimerRef.current = convertTimer;
+  }, [convertTimer]);
+
+  // Format seconds to mm:ss
+  const formatDuration = (secs: number) => {
+    const m = Math.floor(secs / 60)
+      .toString()
+      .padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   // Dropzone
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles: File[]) => {
@@ -171,13 +213,19 @@ const FileConverter: React.FC<FileConverterProps> = ({
       if (file) {
         if (!validateFile(file)) {
           resetFileOnly();
+          setFileInfo(null);
           return;
         }
         resetAll();
         setSelectedFile(file);
+        const ext = file.name.split('.').pop()?.toUpperCase() || '';
+        const size = formatFileSize(file.size);
+        setFileInfo({ ext, size });
         setFileExtension(file.name.split('.').pop()?.toLowerCase() || null);
         ReactGA.event({ category: 'File', action: 'Upload', label: file.name });
         onUserInteract?.();
+      } else {
+        setFileInfo(null);
       }
     },
     multiple: false,
@@ -187,6 +235,12 @@ const FileConverter: React.FC<FileConverterProps> = ({
   // Handler for convert button - giờ sẽ xử lý cả upload và convert
   const onConvertClick = async () => {
     if (selectedFile && targetFormat) {
+      // Chỉ gọi handleConvert, KHÔNG khởi động timer ở đây nữa
+      setConvertTimer(0);
+      convertTimerRef.current = 0;
+      setCompletedTime('--');
+      if (onCompletedTimeChange) onCompletedTimeChange('--');
+      if (timerInterval) clearInterval(timerInterval);
       // Google Analytics event
       ReactGA.event({
         category: 'Conversion',
@@ -196,6 +250,46 @@ const FileConverter: React.FC<FileConverterProps> = ({
       await handleConvert(selectedFile, targetFormat);
     }
   };
+
+  // Start timer when status is UPLOADED, stop when CONVERTED
+  useEffect(() => {
+    if (fileStatus === FILE_STATUS.UPLOADED) {
+      setConvertTimer(0);
+      convertTimerRef.current = 0;
+      setCompletedTime('--');
+      if (onCompletedTimeChange) onCompletedTimeChange('--');
+      if (timerInterval) clearInterval(timerInterval);
+      const interval = setInterval(() => {
+        setConvertTimer((prev) => {
+          const next = prev + 1;
+          convertTimerRef.current = next;
+          return next;
+        });
+      }, 1000);
+      setTimerInterval(interval);
+    } else if (fileStatus === FILE_STATUS.CONVERTED) {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        setTimerInterval(null);
+      }
+      let timeVal = convertTimerRef.current;
+      if (timeVal === 0) timeVal = 1; // Nếu quá nhanh, tối thiểu 1s
+      const timeStr = formatDuration(timeVal);
+      setCompletedTime(timeStr);
+      if (onCompletedTimeChange) onCompletedTimeChange(timeStr);
+    } else if (
+      fileStatus === FILE_STATUS.VALIDATION_FAILED ||
+      fileStatus === FILE_STATUS.CONVERSION_FAILED ||
+      fileStatus === null
+    ) {
+      setCompletedTime('--');
+      if (onCompletedTimeChange) onCompletedTimeChange('--');
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        setTimerInterval(null);
+      }
+    }
+  }, [fileStatus]);
 
   // Effect để gọi API convert khi status là VALIDATED
   useEffect(() => {
@@ -285,6 +379,20 @@ const FileConverter: React.FC<FileConverterProps> = ({
     }
   }, [fileId, onFileIdChange]);
 
+  // Notify parent component of fileInfo changes
+  useEffect(() => {
+    if (typeof onFileInfoChange === 'function') {
+      onFileInfoChange(fileInfo);
+    }
+  }, [fileInfo, onFileInfoChange]);
+
+  // Whenever completedTime changes, notify parent
+  useEffect(() => {
+    if (onCompletedTimeChange) {
+      onCompletedTimeChange(completedTime);
+    }
+  }, [completedTime, onCompletedTimeChange]);
+
   return (
     <div className="mt-4 max-w-md mx-auto p-[2px] bg-gradient-to-r from-[#00FFC6]/50 to-[#5B00FF]/50 rounded-lg shadow-md">
       <div className="lg:w-full p-[1rem] sm:p-6 md:p-8 bg-white rounded-lg dark:bg-black dark:shadow-slate-300/40 dark:text-white">
@@ -320,10 +428,14 @@ const FileConverter: React.FC<FileConverterProps> = ({
             {SUPPORTED_FORMATS.join(', ').toUpperCase()} ({t('max_file_size')})
           </p>
         </div>
+        {/* Pass fileInfo to children via context or props if needed */}
         {selectedFile && (
           <div className="mt-4">
             <p className="text-base sm:text-lg ">
-              {t('selected_file')}: {selectedFile.name}
+              {t('selected_file')}:{' '}
+              <span className="break-words text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 text-ellipsis">
+                {selectedFile.name}
+              </span>
             </p>
           </div>
         )}
@@ -335,7 +447,20 @@ const FileConverter: React.FC<FileConverterProps> = ({
           {fileExtension && (
             <FormatSelector
               fileExtension={fileExtension}
-              onFormatChange={setTargetFormat}
+              onFormatChange={(to) => {
+                setTargetFormat(to);
+                if (fileExtension && to) {
+                  // Cập nhật selectedFormat ở Layout qua prop nếu có
+                  if (typeof window !== 'undefined' && window.dispatchEvent) {
+                    // Gửi custom event để Layout cập nhật selectedFormat
+                    window.dispatchEvent(
+                      new CustomEvent('updateSelectedFormat', {
+                        detail: { from: fileExtension, to },
+                      })
+                    );
+                  }
+                }
+              }}
               disabled={
                 convertLoading ||
                 uploadStatus === 'uploading' ||
@@ -345,7 +470,7 @@ const FileConverter: React.FC<FileConverterProps> = ({
               value={targetFormat} // Truyền targetFormat vào prop value
             />
           )}
-          {/* Nút Chuyển đổi - giờ sẽ xử lý cả upload và convert */}
+          {/* Nút Chuyển đổi - giờ sẽ xử lý cả upload v�� convert */}
           <button
             className={`mt-4 px-4 py-3 font-medium rounded-lg w-full transition flex items-center justify-center
               ${

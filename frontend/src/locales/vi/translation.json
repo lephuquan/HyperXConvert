@@ -93,5 +93,12 @@
   "converted_file_label": "Chuyển đổi thành công",
   "invalid_file_format": "Định dạng file phải là .{{format}}",
   "disabled_cause_processing_conversion": "Đang chuyển đổi file, không thể chọn",
-  "download_file": "Tải về"
+  "download_file": "Tải về",
+  "info": "Thông tin",
+  "before": "Trước",
+  "after": "Sau",
+  "format": "Định dạng",
+  "size": "Dung lượng",
+  "completion_time": "Thời gian hoàn thành",
+  "file_download_exp_time": "Thời gian hết hạn tải file"
 }

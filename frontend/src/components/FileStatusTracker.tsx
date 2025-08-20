@@ -26,10 +26,14 @@ const getErrorMessage = (err: any): string => {
   }
 };
 
-const StatusContent: React.FC<{ status: FileStatus | null; loading: boolean; fileId: string }> = ({ status, loading, fileId }) => {
+const StatusContent: React.FC<{
+  status: FileStatus | null;
+  loading: boolean;
+  fileId: string;
+}> = ({ status, loading, fileId }) => {
   const { t } = useTranslation();
   if (loading) return <Loading text={t('checking_status')} size="md" />;
-  
+
   switch (status) {
     case FILE_STATUS.UPLOADED:
       return (
@@ -82,7 +86,9 @@ const StatusContent: React.FC<{ status: FileStatus | null; loading: boolean; fil
               d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
             ></path>
           </svg>
-          <p className="mt-2 text-base text-gray-700 dark:text-gray-300">{t('validating_file')}</p>
+          <p className="mt-2 text-base text-gray-700 dark:text-gray-300">
+            {t('validating_file')}
+          </p>
         </div>
       );
     case FILE_STATUS.VALIDATION_FAILED:
@@ -214,7 +220,8 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({
       setLoading(false);
       // Only show toast when status transitions to CONVERTED
       if (
-        res.data.status === FILE_STATUS.CONVERTED && prevStatusRef.current !== FILE_STATUS.CONVERTED
+        res.data.status === FILE_STATUS.CONVERTED &&
+        prevStatusRef.current !== FILE_STATUS.CONVERTED
       ) {
         toast.success(t('file_converted_successfully'));
       } else if (
@@ -253,7 +260,7 @@ const FileStatusTracker: React.FC<FileStatusTrackerProps> = ({
   }, [fileId, fetchStatus]);
 
   return (
-    <div className="w-full max-w-md mx-auto p-4 sm:p-6 dark:bg-[rgb(104_189_185/58%)] bg-gray-50 rounded-lg shadow-md mt-4 flex flex-col items-center">
+    <div className="w-full max-w-md mx-auto p-4 sm:p-6 dark:bg-[#19fff494] bg-gray-50 rounded-lg shadow-md mt-4 flex flex-col items-center">
       <StatusContent status={status} loading={loading} fileId={fileId} />
       {!loading && error && (
         <div className="flex flex-col items-center mt-4">
