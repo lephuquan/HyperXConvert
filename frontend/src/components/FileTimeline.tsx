@@ -1,26 +1,46 @@
 import React from 'react';
 import { FileStatus } from '../types/file';
 import { useTranslation } from 'react-i18next';
+import axios from '../api/api';
+import { useCustomToast } from './toast';
 
 export interface FileTimelineProps {
   status: FileStatus | null;
   hasFile: boolean;
   isUploading: boolean;
+  fileId?: string | null; // Allow null for fileId
 }
 
 const FileTimeline: React.FC<FileTimelineProps> = ({
   status,
   hasFile,
   isUploading,
+  fileId, // Destructure fileId prop
 }) => {
-
   const { t } = useTranslation();
+  const toast = useCustomToast(); // Move useCustomToast here
+  const [convertedFilename, setConvertedFilename] = React.useState<
+    string | null
+  >(null); // State to store converted filename
 
   const steps = [
     { key: '', label: '' }, //Đánh dấu dot đầu tiên không có label - chưa tối ưu
     { key: 'uploaded', label: t('uploaded_file_label') }, // push to S3
     { key: 'validate', label: t('validated_file_label') },
     { key: 'convert', label: t('converted_file_label') },
+  ];
+
+  // Skeleton loading effect
+  const skeletonSteps = [0, 1, 2];
+
+  const hiddenStatuses: string[] = [
+    'UPLOADED',
+    'VALIDATING',
+    'VALIDATION_FAILED',
+    'VALIDATED',
+    'CONVERTING',
+    'CONVERSION_FAILED',
+    'CONVERTED',
   ];
 
   // Xác định bước hiện tại
@@ -137,8 +157,55 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
     }
   };
 
+  const handleDownloadClick = async (fileId: string) => {
+    try {
+      const res = await axios.get(`/file/download/${fileId}`);
+
+      const preSignedUrl = res.data?.preSignedUrl || res.data?.downloadUrl;
+
+      if (!preSignedUrl) {
+        toast.error(t('no_download_link'));
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = preSignedUrl;
+      link.setAttribute('download', '');
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        toast.error(t('file_not_found'));
+      } else {
+        toast.error(t('download_error'));
+      }
+    }
+  };
+
+  // Fetch converted filename when status is CONVERTED and fileId is available
+  React.useEffect(() => {
+    const fetchConvertedFilename = async () => {
+      if (status === 'CONVERTED' && fileId) {
+        try {
+          const res = await axios.get(`/file/status/${fileId}`);
+          setConvertedFilename(res.data?.convertedFilename || null);
+        } catch (err) {
+          setConvertedFilename(null);
+        }
+      } else {
+        setConvertedFilename(null);
+      }
+    };
+    fetchConvertedFilename();
+    // Only run when status or fileId changes
+  }, [status, fileId]);
+
   return (
     <div className="flex flex-col w-full mt-4">
+      {/* Skeleton loading effect */}
+
       {steps.map((_, idx) => {
         if (idx > currentStep) return null;
 
@@ -189,6 +256,105 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
           </div>
         );
       })}
+      {!hiddenStatuses.includes(status || '') && (
+        <>
+          <div className="flex w-full">
+            {/* Cột line + dot */}
+            <div className="flex flex-col w-6">
+              {/* Line xuất hiện trước */}
+              <div className="flex w-full animate-pulse">
+                <div className="flex flex-col items-center mr-4">
+                  <div className="w-6 flex items-center justify-center">
+                    <div className="w-[1px] h-6 bg-gray-200"></div>
+                  </div>
+                </div>
+              </div>
+              {skeletonSteps.map((idx) => (
+                <>
+                  <div
+                    key={`skeleton-${idx}`}
+                    className={`flex w-full animate-pulse
+              ${idx > 0 ? 'min-h-[48px]' : ''}`}
+                  >
+                    <div className="flex flex-col items-center mr-4">
+                      {idx > 0 && (
+                        <div className="w-[1px] flex-1 bg-gray-200"></div>
+                      )}
+                      <div className="w-6 h-6 rounded-full border border-gray-400"></div>
+                    </div>
+                    {/* Skeleton block next to each dot */}
+                    {/*<div className="flex-1 h-6 bg-gray-200 rounded ml-4"></div>*/}
+                  </div>
+                </>
+              ))}
+            </div>
+            {/* Line ảo và line Skeleton loading */}
+            <div className="flex flex-1 flex-col">
+              {/* Line ảo xuất hiện trước */}
+              <div className="flex w-full animate-pulse">
+                <div className="flex flex-col items-center mr-4">
+                  <div className="w-6 flex items-center justify-center">
+                    <div className="w-[1px] h-6"></div>
+                  </div>
+                </div>
+              </div>
+              {skeletonSteps.map((idx) => (
+                <>
+                  <div
+                    key={`skeleton-${idx}`}
+                    className={`flex w-full animate-pulse
+              ${idx > 0 ? 'min-h-[48px]' : ''}`}
+                  >
+                    <div className="flex items-start flex-col justify-center i w-full mr-4">
+                      {idx > 0 && <div className="w-[10px] flex-1"></div>}
+                      <div className="h-6 w-2/5 flex flex-col items-center justify-center">
+                        <div className="h-[2px] w-full bg-gray-300 opacity-10 rounded ml-4"></div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 flex items-stretch gap-2 w-full">
+            <button className="flex items-center justify-center h-8 py-3 min-w-[6rem] border-2 border-gray-400  rounded-full animate-pulse opacity-90">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                className="lucide lucide-download-icon lucide-download text-gray-400"
+              >
+                <path d="M12 15V3" />
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <path d="m7 10 5 5 5-5" />
+              </svg>
+            </button>
+            <div className="w-2/5 animate-pulse gap-y-3 flex flex-col items-center justify-center">
+              <div className="h-[1px] w-full bg-gray-400 opacity-90 rounded ml-4"></div>
+              <div className="h-[1px] w-full bg-gray-400 opacity-90 rounded ml-4"></div>
+            </div>
+          </div>
+        </>
+      )}
+      {status === 'CONVERTED' && (
+        <div className="mt-4 flex items-center gap-2 w-full">
+          <button
+            className="px-2 h-8 py-3 min-w-[6rem] font-medium text-sm text-white bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 rounded-full shadow-lg shadow-green-500/50 hover:scale-105 transform transition-transform duration-300 ease-in-out hover:shadow-purple-500/50 flex items-center justify-center"
+            onClick={() => handleDownloadClick(fileId || '')} // Use fileId prop
+          >
+            <span className="text-sm break-words"> {t('download_file')}</span>
+          </button>
+          <span className="text-sm break-words text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 max-w-full overflow-hidden text-ellipsis">
+            {convertedFilename || t('no_download_link')}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

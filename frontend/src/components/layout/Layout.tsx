@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import FileTimeline from '../FileTimeline';
 import FormatList from '../FormatList';
 import ChooseFormatDropdown from '../ChooseFormatDropdown';
+import ConversionInfoTable from '../ConversionInfoTable';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,16 @@ const Layout: React.FC<LayoutProps> = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string>('idle');
   const [fileStatus, setFileStatus] = useState<string | null>(null);
+  const [fileId, setFileId] = useState<string | null>(null); // Track fileId
+  // --- File info for ConversionInfoTable ---
+  const [fileInfo, setFileInfo] = useState<{
+    ext: string;
+    size: string;
+  } | null>(null);
+  // completedTime state for ConversionInfoTable
+  const [completedTime, setCompletedTime] = useState<string | undefined>(
+    undefined
+  );
 
   // --- Format selection state ---
   const [selectedFormat, setSelectedFormat] = useState<{
@@ -60,6 +71,7 @@ const Layout: React.FC<LayoutProps> = () => {
   };
 
   const handleForceReloadAndSelect = (from: string, to: string) => {
+    console.log('clicked from ChooseFormatDropdown');
     handleReloadFileConverter({ force: true });
     // Đợi FileConverter reset xong mới chọn format (setTimeout để đảm bảo state cập nhật)
     setTimeout(() => {
@@ -67,6 +79,17 @@ const Layout: React.FC<LayoutProps> = () => {
       setIsFileConverterReset(false);
     }, 0);
   };
+
+  // Listen for custom event from FormatSelector to update selectedFormat
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      if (e.detail && e.detail.from && e.detail.to) {
+        setSelectedFormat({ from: e.detail.from, to: e.detail.to });
+      }
+    };
+    window.addEventListener('updateSelectedFormat', handler);
+    return () => window.removeEventListener('updateSelectedFormat', handler);
+  }, []);
 
   return (
     <div className="container mx-auto px-4 min-h-screen flex flex-col">
@@ -88,6 +111,7 @@ const Layout: React.FC<LayoutProps> = () => {
           setSelectedFormat({ from, to });
           setChooseFormatOpen(false);
         }}
+        onForceReloadAndSelect={handleForceReloadAndSelect}
       />
       {/* Toast Notifications */}
       <div className="2xl:w-[1200px] 2xl:mx-auto sticky mt-10 z-30">
@@ -99,7 +123,7 @@ const Layout: React.FC<LayoutProps> = () => {
       {/* Main Content: Flex row for FileConverter + Timeline */}
       <main className="flex-1 2xl:w-[1200px] 2xl:mx-auto px-2 sm:px-6 lg:px-8 py-6 sm:py-10">
         <div className="flex flex-col lg:flex-row gap-8 items-stretch">
-          {/* SongList section - only on desktop */}
+          {/* FormatList section - only on desktop */}
           <div className="hidden lg:block w-full lg:w-[260px] xl:w-[300px] 2xl:w-[320px]">
             <FormatList
               onFormatSelect={handleFormatSelect}
@@ -124,16 +148,33 @@ const Layout: React.FC<LayoutProps> = () => {
               selectedFormat={selectedFormat}
               resetTrigger={resetTrigger}
               onReset={(opts) => handleReloadFileConverter(opts)}
+              onFileIdChange={(id) => setFileId(id)} // Update fileId when it changes
+              onFileInfoChange={setFileInfo}
+              // New: callback to update completedTime
+              {...{ onCompletedTimeChange: setCompletedTime }}
             />
           </div>
-          <div className="w-full lg:w-[340px] xl:w-[380px] 2xl:w-[400px]">
+          <div className="flex-col flex w-full max-h-[500px] lg:w-[340px] xl:w-[380px] 2xl:w-[400px]">
             {/* Timeline section */}
             {/* Only render on desktop (lg+) */}
-            <div className="hidden lg:block">
+            <div className="hidden lg:block flex-1 items-center justify-center pb-6 relative">
               <FileTimeline
                 status={fileStatus as any}
                 hasFile={!!selectedFile}
                 isUploading={uploadStatus === 'uploading'}
+                fileId={fileId}
+              />
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-60 border-b border-gray-900 dark:border-gray-700"></span>
+            </div>
+
+            <div className="hidden lg:block flex-1 items-center justify-center mt-4">
+              <ConversionInfoTable
+                beforeExt={selectedFormat?.from || fileInfo?.ext || undefined}
+                beforeSize={fileInfo?.size || undefined}
+                afterExt={selectedFormat?.to || undefined}
+                status={fileStatus || undefined}
+                fileId={fileId || undefined}
+                completedTime={completedTime}
               />
             </div>
           </div>
