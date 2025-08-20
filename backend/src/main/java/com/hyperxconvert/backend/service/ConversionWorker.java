@@ -153,6 +153,8 @@ public class ConversionWorker {
             fileEntity.setStatus(FileStatus.CONVERTED.getValue());
             fileEntity.setConvertedPath(convertedKey);
             fileEntity.setFormatTo(job.getTargetFormat());
+            fileEntity.setConvertedFilename(convertedFilename);
+            fileEntity.setConvertedFileSize(convertedFile != null ? convertedFile.length() : null);
             fileRepository.save(fileEntity);
             ConvertLog logEntry = new ConvertLog(UUID.randomUUID(), fileEntity.getFileId(), fileEntity.getUserIp(), FileStatus.CONVERTED.getValue(), now, null, now, now);
             convertLogRepository.save(logEntry);

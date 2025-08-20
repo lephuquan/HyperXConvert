@@ -24,4 +24,7 @@ public class FileStatusResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String errorCode;
 
-} 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String convertedFilename;
+
+}

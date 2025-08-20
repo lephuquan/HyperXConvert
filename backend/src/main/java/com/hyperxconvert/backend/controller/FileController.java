@@ -3,6 +3,7 @@ package com.hyperxconvert.backend.controller;
 import com.hyperxconvert.backend.dto.request.FileConvertRequest;
 import com.hyperxconvert.backend.dto.response.FileConvertResponse;
 import com.hyperxconvert.backend.dto.request.UploadUrlRequest;
+import com.hyperxconvert.backend.dto.response.FileConvertedInfoResponse;
 import com.hyperxconvert.backend.dto.response.FileStatusResponse;
 import com.hyperxconvert.backend.dto.response.UploadUrlResponse;
 import com.hyperxconvert.backend.service.FileManagementService;
@@ -50,5 +51,21 @@ public class FileController {
         logger.info("[{}] Request to generate pre-signed download URL for fileId: {}", method, fileId);
         java.util.Locale locale = request.getLocale();
         return ResponseEntity.ok(fileService.getDownloadUrl(fileId, locale));
+    }
+
+    @GetMapping("/converted-info/{fileId}")
+    public ResponseEntity<FileConvertedInfoResponse> getConvertedFileInfo(@PathVariable String fileId, HttpServletRequest request) {
+        var file = fileService.getFileEntity(fileId);
+        java.util.Locale locale = request.getLocale();
+        java.time.LocalDateTime expiresAt = file.getExpiresAt();
+        // Nếu locale là Việt Nam thì cộng thêm 7 tiếng (UTC+7)
+        if (locale != null && (locale.getLanguage().equalsIgnoreCase("vi") || locale.getCountry().equalsIgnoreCase("VN"))) {
+            expiresAt = expiresAt != null ? expiresAt.plusHours(7) : null;
+        }
+        FileConvertedInfoResponse response = new FileConvertedInfoResponse(
+            file.getConvertedFileSize(),
+            expiresAt
+        );
+        return ResponseEntity.ok(response);
     }
 }
