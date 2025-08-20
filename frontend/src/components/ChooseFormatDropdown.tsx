@@ -18,6 +18,7 @@ interface ChooseFormatDropdownProps {
   onFormatSelect?: (from: string, to: string) => void;
   selectedFormat?: { from: string; to: string } | null;
   fileStatus?: string | null; // Thêm prop này để nhận trạng thái file
+  onForceReloadAndSelect?: (from: string, to: string) => void; // Thêm prop này
 }
 
 const ChooseFormatDropdown: React.FC<ChooseFormatDropdownProps> = ({
@@ -26,7 +27,8 @@ const ChooseFormatDropdown: React.FC<ChooseFormatDropdownProps> = ({
   onClose,
   selectedFormat,
   onFormatSelect,
-  fileStatus, // nhận prop này
+  fileStatus,
+  onForceReloadAndSelect, // thêm prop này
 }) => {
   const { t } = useTranslation();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -120,6 +122,10 @@ const ChooseFormatDropdown: React.FC<ChooseFormatDropdownProps> = ({
               } hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
               onClick={() => {
                 if (isBlocked) return;
+                if (fileStatus === 'CONVERTED' && onForceReloadAndSelect) {
+                  onForceReloadAndSelect(item.from, item.value);
+                  return;
+                }
                 onFormatSelect?.(item.from, item.value);
                 onClose();
               }}
