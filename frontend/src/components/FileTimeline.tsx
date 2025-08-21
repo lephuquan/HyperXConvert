@@ -350,7 +350,7 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
           >
             <span className="text-sm break-words"> {t('download_file')}</span>
           </button>
-          <span className="text-sm break-words text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 max-w-full overflow-hidden text-ellipsis">
+          <span className="text-sm break-words text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 overflow-hidden text-ellipsis">
             {convertedFilename || t('no_download_link')}
           </span>
         </div>
