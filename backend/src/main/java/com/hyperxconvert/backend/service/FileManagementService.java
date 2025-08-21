@@ -121,6 +121,12 @@ public class FileManagementService {
         return fileRepository.findById(fileId).orElseThrow(() -> new ApiException("FILE_NOT_FOUND", "error.file.not.found"));
     }
 
+    public File getFileEntity(String fileId) {
+        UUID uuid = UUID.fromString(fileId);
+        return fileRepository.findById(uuid)
+            .orElseThrow(() -> new ApiException("FILE_NOT_FOUND", "error.file.not.found"));
+    }
+
     private void validateFileStatusForConversion(File file) {
         if (!FileStatus.VALIDATED.getValue().equalsIgnoreCase(file.getStatus())) {
             log.warn("File not ready for conversion - fileId: {}, status: {}", file.getFileId(), file.getStatus());
@@ -195,7 +201,8 @@ public class FileManagementService {
             response.setOriginalFilename(file.getOriginalFilename());
             response.setFormatFrom(file.getFormatFrom());
             response.setFormatTo(file.getFormatTo());
-            
+            response.setConvertedFilename(file.getConvertedFilename());
+
             // Add status-specific information
             response.setMessage(StatusMessageConstants.getMessage(file.getStatus()));
             

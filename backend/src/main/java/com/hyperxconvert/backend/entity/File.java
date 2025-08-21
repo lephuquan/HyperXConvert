@@ -48,6 +48,12 @@ public class File {
     @Column(name = "original_filename")
     private String originalFilename;
     
+    @Column(name = "converted_filename")
+    private String convertedFilename;
+
+    @Column(name = "converted_file_size")
+    private Long convertedFileSize;
+
     // Constructor with required fields for creating new files
     public File(UUID fileId, String userIp, String originalPath, String formatFrom, String formatTo, String status, LocalDateTime expiryTime) {
         this.fileId = fileId;
@@ -72,4 +78,18 @@ public class File {
         this.originalFilename = originalFilename;
         this.createdAt = LocalDateTime.now();
     }
-} 
+
+    // Constructor with original filename and converted filename
+    public File(UUID fileId, String userIp, String originalPath, String formatFrom, String formatTo, String status, LocalDateTime expiryTime, String originalFilename, String convertedFilename) {
+        this.fileId = fileId;
+        this.userIp = userIp;
+        this.originalPath = originalPath;
+        this.formatFrom = formatFrom;
+        this.formatTo = formatTo;
+        this.status = status;
+        this.expiresAt = expiryTime;
+        this.originalFilename = originalFilename;
+        this.convertedFilename = convertedFilename;
+        this.createdAt = LocalDateTime.now();
+    }
+}
