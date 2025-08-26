@@ -270,22 +270,20 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
                 </div>
               </div>
               {skeletonSteps.map((idx) => (
-                <>
-                  <div
-                    key={`skeleton-${idx}`}
-                    className={`flex w-full animate-pulse
+                <div
+                  key={`skeleton-${idx}`}
+                  className={`flex w-full animate-pulse
               ${idx > 0 ? 'min-h-[48px]' : ''}`}
-                  >
-                    <div className="flex flex-col items-center mr-4">
-                      {idx > 0 && (
-                        <div className="w-[1px] flex-1 bg-gray-200"></div>
-                      )}
-                      <div className="w-6 h-6 rounded-full border border-gray-400"></div>
-                    </div>
-                    {/* Skeleton block next to each dot */}
-                    {/*<div className="flex-1 h-6 bg-gray-200 rounded ml-4"></div>*/}
+                >
+                  <div className="flex flex-col items-center mr-4">
+                    {idx > 0 && (
+                      <div className="w-[1px] flex-1 bg-gray-200"></div>
+                    )}
+                    <div className="w-6 h-6 rounded-full border border-gray-400"></div>
                   </div>
-                </>
+                  {/* Skeleton block next to each dot */}
+                  {/*<div className="flex-1 h-6 bg-gray-200 rounded ml-4"></div>*/}
+                </div>
               ))}
             </div>
             {/* Line ảo và line Skeleton loading */}
@@ -299,20 +297,18 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
                 </div>
               </div>
               {skeletonSteps.map((idx) => (
-                <>
-                  <div
-                    key={`skeleton-${idx}`}
-                    className={`flex w-full animate-pulse
+                <div
+                  key={`skeleton-${idx}`}
+                  className={`flex w-full animate-pulse
               ${idx > 0 ? 'min-h-[48px]' : ''}`}
-                  >
-                    <div className="flex items-start flex-col justify-center i w-full mr-4">
-                      {idx > 0 && <div className="w-[10px] flex-1"></div>}
-                      <div className="h-6 w-2/5 flex flex-col items-center justify-center">
-                        <div className="h-[2px] w-full bg-gray-300 opacity-10 rounded ml-4"></div>
-                      </div>
+                >
+                  <div className="flex items-start flex-col justify-center i w-full mr-4">
+                    {idx > 0 && <div className="w-[10px] flex-1"></div>}
+                    <div className="h-6 w-2/5 flex flex-col items-center justify-center">
+                      <div className="h-[2px] w-full bg-gray-300 opacity-10 rounded ml-4"></div>
                     </div>
                   </div>
-                </>
+                </div>
               ))}
             </div>
           </div>
@@ -325,9 +321,9 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 className="lucide lucide-download-icon lucide-download text-gray-400"
               >
                 <path d="M12 15V3" />
@@ -350,7 +346,7 @@ const FileTimeline: React.FC<FileTimelineProps> = ({
           >
             <span className="text-sm break-words"> {t('download_file')}</span>
           </button>
-          <span className="text-sm break-words text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 overflow-hidden text-ellipsis">
+          <span className="text-sm break-words break-all whitespace-normal max-w-[70%] text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-500 to-purple-600">
             {convertedFilename || t('no_download_link')}
           </span>
         </div>
