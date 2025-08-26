@@ -1,10 +1,11 @@
 # Note:
+# - File override này sẽ ghi đè lên file docker-compose.yml
 # - Run for overriding: docker compose up
 
 version: '3.8'
 
 services:
-  db:
+  db: # Đây là cấu hình dịch vụ PostgreSQL, không phải cấu hình DB trong application.yml
     image: postgres:16
     container_name: postgres-local
     environment:
@@ -19,8 +20,6 @@ services:
       - spring-net
 
   backend:
-    env_file:
-      - ${SPRING_ENV_ACTIVE}  # env.staging / env.prod
     build:
       context: ./
     container_name: springboot-app
@@ -30,14 +29,13 @@ services:
       - "8080:8080"
       - "5005:5005"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
     networks:
       - spring-net
 
-volumes:
+volumes: # dữ liệu DB sẽ không mất khi bạn docker-compose down hay recreate container
   pgdata:
 
 networks:

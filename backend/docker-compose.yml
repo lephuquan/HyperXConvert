@@ -1,24 +1,14 @@
 # Note:
 # - Run for overriding: docker compose -f docker-compose.yml up -d
+# - Docker Compose sẽ tự động tạo network mặc định cho tất cả services trong file.
+# - Vì chỉ có 1 service (backend), không cần định nghĩa networks
 
 version: '3.8'
 
 services:
   backend:
-    env_file:
-      - ${SPRING_ENV_ACTIVE}
     build:
       context: ./
     container_name: springboot-app
     ports:
       - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_REGION: ${AWS_REGION}
-    networks:
-      - spring-net
-
-networks:
-  spring-net:

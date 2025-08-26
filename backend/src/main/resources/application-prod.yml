@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+    import: "aws-parameterstore:/hyperxconvert/dev/"
+      # - aws-parameterstore: DB
+      # - aws-parameterstore: S3 BUCKET
+      # - aws-parameterstore: QUEUE
+
+app:
+  upload:
+    max-daily-uploads: 1000
+    presigned-url-expiry: PT24H  # 24 hours
