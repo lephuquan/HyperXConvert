@@ -2,22 +2,10 @@ spring:
   config:
     activate:
       on-profile: dev  # -Dspring.profiles.active=dev
-
-  datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
-
-aws:
-  region: ${AWS_REGION}
-  s3:
-    bucket: ${AWS_S3_BUCKET}
-  sqs:
-    upload-queue: ${AWS_SQS_UPLOAD_QUEUE}
-    convert-queue: ${AWS_SQS_CONVERT_QUEUE}
-    dlq-upload-queue: ${AWS_SQS_DLQ_UPLOAD_QUEUE}
-    dlq-convert-queue: ${AWS_SQS_DLQ_CONVERT_QUEUE}
+    import: "aws-parameterstore:/hyperxconvert/dev/"
+      # - aws-parameterstore: DB
+      # - aws-parameterstore: S3 BUCKET
+      # - aws-parameterstore: QUEUE
 
 app:
   upload:
