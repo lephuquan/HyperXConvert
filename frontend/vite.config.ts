@@ -1,9 +1,10 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/', // Giữ mặc định cho production (CloudFront/S3 sẽ phục vụ từ root)
   plugins: [react()],
   resolve: {
     alias: {
@@ -18,7 +19,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 3000,
-    allowedHosts: ['.ngrok-free.app'], // Cho phép domain từ ngrok
+    allowedHosts: ['.ngrok-free.app'], // Cho phép domain từ ngrok khi dev
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
@@ -27,7 +28,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
-    sourcemap: true,
+    outDir: 'dist', // thư mục output build
+    sourcemap: true, // tiện debug production
   },
-})
+});
