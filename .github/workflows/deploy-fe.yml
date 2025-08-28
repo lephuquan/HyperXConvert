@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'frontend/**'  # Trigger nếu thay đổi trong thư mục frontend
+      - '.github/workflows/deploy-fe.yml'
 
 jobs:
   build-and-deploy:
