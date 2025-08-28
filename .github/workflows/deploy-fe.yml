@@ -1,0 +1,43 @@
+name: Deploy Frontend to AWS S3 + CloudFront
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'  # Trigger nếu thay đổi trong thư mục frontend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'  # Phiên bản Node phù hợp với Vite + React
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci  # Hoặc npm install nếu không dùng lockfile
+
+      - name: Build app
+        working-directory: ./frontend
+        run: npm run build  # Tạo dist folder
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to S3
+        working-directory: ./frontend
+        run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete  # Sync và xóa files cũ
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"  # Invalidate tất cả paths
