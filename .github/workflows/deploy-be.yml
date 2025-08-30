@@ -78,20 +78,17 @@ jobs:
           IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
           DOCKER_PATH: /home/ec2-user
         run: |
-          # Định nghĩa script deploy, sử dụng dấu nháy kép để bao quanh.
-          # Sẽ thoát (escape) các dấu nháy kép bên trong chuỗi nếu cần.
-          DEPLOY_SCRIPT="
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
-          cd $DOCKER_PATH
-          # Cập nhật tag image trong docker-compose.yml trên EC2
-          sed -i 's|image: hyperxconvert/springboot-app:.*|image: hyperxconvert/springboot-app:'$IMAGE_TAG'|g' docker-compose.yml
+          printf -v DEPLOY_SCRIPT '
+          aws ecr get-login-password --region %s | docker login --username AWS --password-stdin %s
+          cd %s
+          sed -i "s|image: hyperxconvert/springboot-app:.*|image: hyperxconvert/springboot-app:%s|g" docker-compose.yml
           docker-compose pull
           docker-compose up -d
           docker system prune -f
-          "
-          # Gửi lệnh qua SSM, sử dụng các tham số rõ ràng thay vì một chuỗi duy nhất
+          ' "$AWS_REGION" "$ECR_REPO" "$DOCKER_PATH" "$IMAGE_TAG"
+
           aws ssm send-command \
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=$'${DEPLOY_SCRIPT}'" \
-            --region $AWS_REGION
+            --parameters commands="$DEPLOY_SCRIPT" \
+            --region "$AWS_REGION"
