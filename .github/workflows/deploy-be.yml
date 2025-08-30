@@ -50,14 +50,14 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: hyperxconvert/springboot-app
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ github.sha }}-${{ github.run_number }} # kết hợp github.sha với github.run_number để tạo ra một IMAGE_TAG duy nhất.
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Set output for image tag
         id: set-image-tag
-        run: echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+        run: echo "image_tag=${{ github.sha }}-${{ github.run_number }}" >> $GITHUB_OUTPUT # kết hợp github.sha với github.run_number để tạo ra một IMAGE_TAG duy nhất.
 
   deploy:
     runs-on: ubuntu-latest
