@@ -12,6 +12,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,7 +28,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }} # cache key thông minh cho Maven dependencies trong GitHub Actions
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
 
       - name: Build JAR
         working-directory: ./backend
@@ -43,15 +45,19 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push Docker image to ECR
+      - name: Build and tag Docker image
+        id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: hyperxconvert/springboot-app  # Tên repo ECR
+          ECR_REPOSITORY: hyperxconvert/springboot-app
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Set output for image tag
+        id: set-image-tag
+        run: echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
 
   deploy:
     runs-on: ubuntu-latest
@@ -66,15 +72,16 @@ jobs:
 
       - name: Deploy BE to EC2 using AWS SSM
         run: |
-          ECR_REPO=${{ secrets.ECR_REPO }} # Tên ECR repo bạn đã có
+          ECR_REPO=${{ secrets.ECR_REPO }}
           EC2_INSTANCE_ID=${{ secrets.EC2_INSTANCE_ID }}
           AWS_REGION=${{ secrets.AWS_REGION }}
-          
+          IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+
           # Lệnh để pull và chạy Docker Compose
           DEPLOY_SCRIPT="
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
           cd ${{ secrets.EC2_DOCKER_PATH }}
-          docker-compose pull
+          docker-compose pull # Docker Compose sẽ pull image với tag mà nó được cấu hình trong file docker-compose.yml.
           docker-compose up -d
           docker system prune -f
           "
