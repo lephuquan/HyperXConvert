@@ -45,19 +45,19 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and tag Docker image
+      - name: Build and push Docker image
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: hyperxconvert/springboot-app
-          IMAGE_TAG: ${{ github.sha }}-${{ github.run_number }} # kết hợp github.sha với github.run_number để tạo ra một IMAGE_TAG duy nhất.
+          IMAGE_TAG: ${{ github.sha }}-${{ github.run_number }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Set output for image tag
         id: set-image-tag
-        run: echo "image_tag=${{ github.sha }}-${{ github.run_number }}" >> $GITHUB_OUTPUT # kết hợp github.sha với github.run_number để tạo ra một IMAGE_TAG duy nhất.
+        run: echo "image_tag=${{ github.sha }}-${{ github.run_number }}" >> $GITHUB_OUTPUT
 
   deploy:
     runs-on: ubuntu-latest
@@ -71,22 +71,22 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy BE to EC2 using AWS SSM
+        env:
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+          EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+          DOCKER_PATH: /home/ec2-user
         run: |
-          ECR_REPO=${{ secrets.ECR_REPO }}
-          EC2_INSTANCE_ID=${{ secrets.EC2_INSTANCE_ID }}
-          AWS_REGION=${{ secrets.AWS_REGION }}
-          IMAGE_TAG=${{ needs.build.outputs.image_tag }}
-
-          # Lệnh để pull và chạy Docker Compose
           DEPLOY_SCRIPT="
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
-          cd ${{ secrets.EC2_DOCKER_PATH }}
-          docker-compose pull # Docker Compose sẽ pull image với tag mà nó được cấu hình trong file docker-compose.yml.
+          cd $DOCKER_PATH
+          # Cập nhật tag image trong docker-compose.yml trên EC2
+          sed -i 's|image: hyperxconvert/springboot-app:.*|image: hyperxconvert/springboot-app:'$IMAGE_TAG'|g' docker-compose.yml
+          docker-compose pull
           docker-compose up -d
           docker system prune -f
           "
-          
-          # Gửi lệnh qua SSM
           aws ssm send-command \
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
