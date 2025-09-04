@@ -75,36 +75,74 @@ jobs:
 
       - name: Deploy BE to EC2 using AWS SSM
         env:
-          ECR_REPO: ${{ secrets.ECR_REPO }}
+          ECR_REGISTRY: 037195638912.dkr.ecr.ap-southeast-1.amazonaws.com
           EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
           DOCKER_PATH: /home/ec2-user
         run: |
-          DEPLOY_SCRIPT=$(cat << 'EOF'
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
-          cd $DOCKER_PATH
-          # Write docker-compose.yml with correct YAML indentation
-          cat << 'EOC' > docker-compose.yml
-          version: '3.8'
-          services:
-            backend:
-              image: hyperxconvert/springboot-app:$IMAGE_TAG
-              container_name: springboot-app
-              ports:
-                - "8080:8080"
-              environment:
-                SPRING_PROFILES_ACTIVE: prod
-          EOC
-          docker-compose pull
-          docker-compose up -d --force-recreate
-          docker system prune -f
-          EOF
-          )
-          # Escape newlines for SSM
-          DEPLOY_SCRIPT=$(echo "$DEPLOY_SCRIPT" | sed ':a;N;$!ba;s/\n/\\n/g')
           aws ssm send-command \
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=$DEPLOY_SCRIPT" \
-            --region "$AWS_REGION"
+            --parameters '{"commands":[
+              "echo Deploy started at $(date +%Y-%m-%dT%H:%M:%S%Z) >> /tmp/deploy.log",
+              "df -h /var/lib/docker | grep -v Filesystem | awk '\''{print $4}'\'' | xargs echo Available disk space before deploy: >> /tmp/deploy.log",
+              "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY || echo ECR login failed >> /tmp/deploy.log",
+              "cd $DOCKER_PATH",
+              "ls -l docker-compose.yml >> /tmp/deploy.log || echo docker-compose.yml not found >> /tmp/deploy.log",
+              "chmod 644 docker-compose.yml || true",
+              "docker stop springboot-app || true",
+              "docker rm springboot-app || true",
+              "docker system prune -a -f --volumes || echo Prune failed >> /tmp/deploy.log",
+              "cat << EOC > docker-compose.yml",
+              "services:",
+              "  backend:",
+              "    image: $ECR_REGISTRY/hyperxconvert/springboot-app:$IMAGE_TAG",
+              "    container_name: springboot-app",
+              "    ports:",
+              "      - \"8080:8080\"",
+              "    environment:",
+              "      SPRING_PROFILES_ACTIVE: prod",
+              "      AWS_ACCESS_KEY_ID: \"${AWS_ACCESS_KEY_ID:-}\"",
+              "      AWS_SECRET_ACCESS_KEY: \"${AWS_SECRET_ACCESS_KEY:-}\"",
+              "      AWS_REGION: \"${AWS_REGION:-ap-southeast-1}\"",
+              "EOC",
+              "cat docker-compose.yml >> /tmp/deploy.log",
+              "docker-compose pull || echo Pull failed for image $ECR_REGISTRY/hyperxconvert/springboot-app:$IMAGE_TAG >> /tmp/deploy.log",
+              "docker-compose up -d --force-recreate || echo Up failed >> /tmp/deploy.log",
+              "docker system prune -a -f --volumes || echo Post-prune failed >> /tmp/deploy.log",
+              "df -h /var/lib/docker | grep -v Filesystem | awk '\''{print $4}'\'' | xargs echo Available disk space after deploy: >> /tmp/deploy.log",
+              "cat << EOF > post-deploy-check.sh",
+              "#!/bin/bash",
+              "LOG_FILE=/tmp/post-deploy-check.log",
+              "echo Post-Deploy Check - $(date +%Y-%m-%dT%H:%M:%S%Z) > \\$LOG_FILE",
+              "echo Deploy Time: Approximately $(date +%Y-%m-%dT%H:%M:%S%Z) >> \\$LOG_FILE",
+              "echo >> \\$LOG_FILE",
+              "echo === Disk Space === >> \\$LOG_FILE",
+              "df -h /var/lib/docker | grep -v Filesystem >> \\$LOG_FILE",
+              "echo >> \\$LOG_FILE",
+              "echo === docker-compose.yml === >> \\$LOG_FILE",
+              "cat /home/ec2-user/docker-compose.yml >> \\$LOG_FILE",
+              "echo >> \\$LOG_FILE",
+              "echo === Docker Images === >> \\$LOG_FILE",
+              "docker images | grep springboot-app >> \\$LOG_FILE",
+              "echo >> \\$LOG_FILE",
+              "echo === Running Containers === >> \\$LOG_FILE",
+              "docker ps >> \\$LOG_FILE",
+              "echo >> \\$LOG_FILE",
+              "echo === Container Logs (springboot-app) === >> \\$LOG_FILE",
+              "docker logs springboot-app --tail 10 >> \\$LOG_FILE",
+              "echo >> \\$LOG_FILE",
+              "echo === Application Health === >> \\$LOG_FILE",
+              "curl -s -o /dev/null -w \"%{http_code}\\n\" http://localhost:8080 >> \\$LOG_FILE",
+              "echo >> \\$LOG_FILE",
+              "echo === Deploy Log === >> \\$LOG_FILE",
+              "cat /tmp/deploy.log >> \\$LOG_FILE",
+              "echo Check completed. Results saved to \\$LOG_FILE",
+              "EOF",
+              "chmod +x post-deploy-check.sh",
+              "./post-deploy-check.sh",
+              "cat /tmp/post-deploy-check.log"
+            ]}' \
+            --region "$AWS_REGION" \
+            --output text
