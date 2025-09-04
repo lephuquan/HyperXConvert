@@ -81,10 +81,10 @@ jobs:
           IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
           DOCKER_PATH: /home/ec2-user
         run: |
-          DEPLOY_SCRIPT=$(cat << EOF
+          DEPLOY_SCRIPT=$(cat << 'EOF'
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
           cd $DOCKER_PATH
-          # Copy docker-compose.yml từ source
+          # Write docker-compose.yml with correct YAML indentation
           cat << 'EOC' > docker-compose.yml
           version: '3.8'
           services:
@@ -101,8 +101,10 @@ jobs:
           docker system prune -f
           EOF
           )
+          # Escape newlines for SSM
+          DEPLOY_SCRIPT=$(echo "$DEPLOY_SCRIPT" | sed ':a;N;$!ba;s/\n/\\n/g')
           aws ssm send-command \
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=[ \"$DEPLOY_SCRIPT\" ]" \
+            --parameters "commands=$DEPLOY_SCRIPT" \
             --region "$AWS_REGION"
