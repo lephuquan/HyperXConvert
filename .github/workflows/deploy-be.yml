@@ -85,6 +85,7 @@ jobs:
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
+              "df -h /var/lib/docker | grep -v Filesystem | awk '\''{print $4}'\'' | xargs echo Available disk space: >> /tmp/deploy.log",
               "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY",
               "cd $DOCKER_PATH",
               "cat << EOC > docker-compose.yml",
@@ -100,6 +101,7 @@ jobs:
               "      AWS_SECRET_ACCESS_KEY: \"${AWS_SECRET_ACCESS_KEY:-}\"",
               "      AWS_REGION: \"${AWS_REGION:-ap-southeast-1}\"",
               "EOC",
+              "docker system prune -a -f --volumes",
               "docker-compose pull",
               "docker-compose up -d --force-recreate",
               "docker system prune -a -f --volumes"
