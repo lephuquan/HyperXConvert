@@ -48,7 +48,7 @@ jobs:
       - name: Build and push Docker image
         id: build-image
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}  # e.g., 037195638912.dkr.ecr.ap-southeast-1.amazonaws.com
           ECR_REPOSITORY: hyperxconvert/springboot-app
           IMAGE_TAG: ${{ github.sha }}-${{ github.run_number }}
         run: |
@@ -75,7 +75,7 @@ jobs:
 
       - name: Deploy BE to EC2 using AWS SSM
         env:
-          ECR_REPO: ${{ secrets.ECR_REPO }}
+          ECR_REGISTRY: 037195638912.dkr.ecr.ap-southeast-1.amazonaws.com
           EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
@@ -85,21 +85,25 @@ jobs:
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
-              "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO",
+              "df -h /var/lib/docker | grep -v Filesystem | awk '\''{print $4}'\'' | xargs echo Available disk space: >> /tmp/deploy.log",
+              "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY",
               "cd $DOCKER_PATH",
               "cat << EOC > docker-compose.yml",
-              "version: \"3.8\"",
               "services:",
               "  backend:",
-              "    image: hyperxconvert/springboot-app:$IMAGE_TAG",
+              "    image: $ECR_REGISTRY/hyperxconvert/springboot-app:$IMAGE_TAG",
               "    container_name: springboot-app",
               "    ports:",
               "      - \"8080:8080\"",
               "    environment:",
               "      SPRING_PROFILES_ACTIVE: prod",
+              "      AWS_ACCESS_KEY_ID: \"${AWS_ACCESS_KEY_ID:-}\"",
+              "      AWS_SECRET_ACCESS_KEY: \"${AWS_SECRET_ACCESS_KEY:-}\"",
+              "      AWS_REGION: \"${AWS_REGION:-ap-southeast-1}\"",
               "EOC",
+              "docker system prune -a -f --volumes",
               "docker-compose pull",
               "docker-compose up -d --force-recreate",
-              "docker system prune -f"
+              "docker system prune -a -f --volumes"
             ]}' \
             --region "$AWS_REGION"
