@@ -81,30 +81,25 @@ jobs:
           IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
           DOCKER_PATH: /home/ec2-user
         run: |
-          DEPLOY_SCRIPT=$(cat << 'EOF'
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
-          cd $DOCKER_PATH
-          # Write docker-compose.yml with correct YAML indentation
-          cat << 'EOC' > docker-compose.yml
-          version: '3.8'
-          services:
-            backend:
-              image: hyperxconvert/springboot-app:$IMAGE_TAG
-              container_name: springboot-app
-              ports:
-                - "8080:8080"
-              environment:
-                SPRING_PROFILES_ACTIVE: prod
-          EOC
-          docker-compose pull
-          docker-compose up -d --force-recreate
-          docker system prune -f
-          EOF
-          )
-          # Escape newlines for SSM
-          DEPLOY_SCRIPT=$(echo "$DEPLOY_SCRIPT" | sed ':a;N;$!ba;s/\n/\\n/g')
           aws ssm send-command \
             --instance-ids "$EC2_INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=$DEPLOY_SCRIPT" \
+            --parameters '{"commands":[
+              "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO",
+              "cd $DOCKER_PATH",
+              "cat << EOC > docker-compose.yml",
+              "version: \"3.8\"",
+              "services:",
+              "  backend:",
+              "    image: hyperxconvert/springboot-app:$IMAGE_TAG",
+              "    container_name: springboot-app",
+              "    ports:",
+              "      - \"8080:8080\"",
+              "    environment:",
+              "      SPRING_PROFILES_ACTIVE: prod",
+              "EOC",
+              "docker-compose pull",
+              "docker-compose up -d --force-recreate",
+              "docker system prune -f"
+            ]}' \
             --region "$AWS_REGION"
