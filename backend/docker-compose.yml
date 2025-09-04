@@ -4,11 +4,9 @@
 # - Vì chỉ có 1 service (backend), không cần định nghĩa networks
 
 version: '3.8'
-
 services:
   backend:
-    build:
-      context: ./
+    image: hyperxconvert/springboot-app:latest  # Ban đầu để tag là 'latest', script sẽ thay bằng tag mới
     container_name: springboot-app
     ports:
       - "8080:8080"
