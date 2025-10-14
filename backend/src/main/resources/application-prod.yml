@@ -2,7 +2,7 @@ spring:
   config:
     activate:
       on-profile: prod
-    import: "aws-parameterstore:/hyperxconvert/prod/spring/"
+    import: "aws-parameterstore:/hyperxconvert/prod/"
       # - aws-parameterstore: DB
       # - aws-parameterstore: S3 BUCKET
       # - aws-parameterstore: QUEUE
