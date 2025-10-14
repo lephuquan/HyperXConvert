@@ -31,16 +31,14 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**") // chỉ cho API - Chỉ cho phép đi vào /api
-                        .allowedOrigins(
-                                "https://hyperxconverter.com",
-                                "https://www.hyperxconverter.com"
-                        )
+                registry.addMapping("/api/**")
+                        .allowedOriginPatterns("https://*.hyperxconverter.com")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
-                        .allowCredentials(false) // Chưa dùng có cookie/token
+                        .allowCredentials(false)
                         .maxAge(3600);
             }
         };
     }
+
 }
